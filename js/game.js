@@ -27,7 +27,8 @@ let bears = [];
 let rockfall = new RockfallManager();
 let powerups = new PowerupManager();
 let cameraY = 0;
-let gameState = 'charselect'; // Börjar med karaktärsval
+let gameState = 'charselect'; // charselect → levelselect → playing → cutscene
+let levelCompleted = false;
 let deathCause = '';
 let nextBearHeight = 100;
 let nextYetiHeight = 200;
@@ -47,38 +48,52 @@ const IDLE_THRESHOLD = 120; // 2 sekunder vid 60fps
 // Koppla input
 setupInput(canvas, () => gameState, () => deathCutscene && deathCutscene.canRestart, restartGame);
 
-// Karaktärsval via klick/touch
-canvas.addEventListener('click', handleCharacterClick);
+// Menyval via klick/touch
+function handleMenuClick(canvasX, canvasY) {
+    if (gameState === 'charselect') {
+        const chosen = getSelectedCharacter(canvasX, canvasY);
+        if (chosen) {
+            selectedCharacter = chosen;
+            gameState = 'levelselect';
+        }
+    } else if (gameState === 'levelselect') {
+        const lvl = getSelectedLevel(canvasX, canvasY);
+        if (lvl !== null) {
+            levelProgress.selectLevel(lvl);
+            startGame(selectedCharacter);
+        }
+    }
+}
+
+canvas.addEventListener('click', (e) => {
+    if (gameState !== 'charselect' && gameState !== 'levelselect') return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
+    handleMenuClick(cx, cy);
+});
+
 canvas.addEventListener('touchend', (e) => {
-    if (gameState !== 'charselect') return;
+    if (gameState !== 'charselect' && gameState !== 'levelselect') return;
     const touch = e.changedTouches[0];
     if (!touch) return;
     const rect = canvas.getBoundingClientRect();
     const cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
     const cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
-    const chosen = getSelectedCharacter(cx, cy);
-    if (chosen) startGame(chosen);
+    handleMenuClick(cx, cy);
 });
 
-// Karaktärsval via tangentbord
 window.addEventListener('keydown', (e) => {
-    if (gameState !== 'charselect') return;
-    if (e.key === '1') startGame('alfred');
-    if (e.key === '2') startGame('astrid');
-    if (e.key === '3') startGame('pappa');
-    if (e.key === '4') startGame('jeff');
-    if (e.key === '5') startGame('alvis');
-    if (e.key === '6') startGame('bob');
+    if (gameState === 'charselect') {
+        const charKeys = { '1': 'alfred', '2': 'astrid', '3': 'pappa', '4': 'jeff', '5': 'alvis', '6': 'bob' };
+        if (charKeys[e.key]) {
+            selectedCharacter = charKeys[e.key];
+            gameState = 'levelselect';
+        }
+    } else if (gameState === 'levelselect') {
+        if (e.key === 'Escape') gameState = 'charselect';
+    }
 });
-
-function handleCharacterClick(e) {
-    if (gameState !== 'charselect') return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
-    const chosen = getSelectedCharacter(cx, cy);
-    if (chosen) startGame(chosen);
-}
 
 function startGame(characterId) {
     selectedCharacter = characterId;
@@ -96,8 +111,8 @@ function startGame(characterId) {
     lastPlayerX = 0;
     lastPlayerY = 0;
     cameraY = 0;
+    levelCompleted = false;
     gameState = 'playing';
-    stateTimer = 0;
 }
 
 function restartGame() {
@@ -111,8 +126,7 @@ function restartGame() {
 
 function goToCharacterSelect() {
     savedMaxHeight = player ? player.maxHeight : 0;
-    gameState = 'charselect';
-    selectedCharacter = null;
+    gameState = 'levelselect';
 }
 
 // Fiende-spawning
@@ -239,9 +253,14 @@ function drawRocketFlame(ctx, player, cameraY) {
 
 // Huvudloop
 function gameLoop() {
-    // === KARAKTÄRSVAL ===
+    // === MENYSKÄRMAR ===
     if (gameState === 'charselect') {
         drawCharacterSelect(ctx, canvas);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (gameState === 'levelselect') {
+        drawLevelSelect(ctx, canvas);
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -254,6 +273,14 @@ function gameLoop() {
         updateEagles();
         rockfall.update(player.y, player.getHeight(), level.groundY);
         powerups.update(player, level);
+
+        // Kolla om spelaren nått bergets topp
+        if (!levelCompleted && player.getHeight() >= levelProgress.getTargetHeight()) {
+            levelCompleted = true;
+            levelProgress.completeCurrentLevel();
+            bearWarning = 180;
+            enemyWarningText = 'TOPPEN!';
+        }
 
         // Lava = 40 skada
         if (player.inLava) {
@@ -366,6 +393,7 @@ function gameLoop() {
         player.draw(ctx, cameraY);
         rockfall.drawWarning(ctx, canvas);
         powerups.drawActiveEffect(ctx, canvas, player);
+        drawLevelHUD(ctx, canvas, player.getHeight());
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
     // (dödsinfo visas nu inuti cutscenen)
