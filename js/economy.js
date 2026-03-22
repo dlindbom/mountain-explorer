@@ -8,16 +8,23 @@ const economy = {
     bestHeight: 0,
     unlockedCharacters: ['alfred', 'astrid', 'pappa', 'mamma', 'alice'], // Gratis från start
 
+    // Karaktärer som alltid är gratis
+    FREE_CHARACTERS: ['alfred', 'astrid', 'pappa', 'mamma', 'alice'],
+
     load() {
         try {
             const data = JSON.parse(localStorage.getItem(SAVE_KEY));
             if (data) {
                 this.coins = data.coins || 0;
                 this.bestHeight = data.bestHeight || 0;
-                this.unlockedCharacters = data.unlockedCharacters || ['alfred', 'astrid', 'pappa'];
+                this.unlockedCharacters = data.unlockedCharacters || [];
             }
-        } catch (e) {
-            // Om localStorage inte funkar, kör med defaults
+        } catch (e) {}
+        // Se till att gratis-karaktärer alltid finns
+        for (const id of this.FREE_CHARACTERS) {
+            if (!this.unlockedCharacters.includes(id)) {
+                this.unlockedCharacters.push(id);
+            }
         }
     },
 
