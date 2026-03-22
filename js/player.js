@@ -70,7 +70,7 @@ const CHARACTERS = {
         speed: 4.5,
         jumpForce: -17.3,
         climbSpeed: 3,
-        cost: 350,
+        cost: 700,
         jacket: '#1E90FF',
         pants: '#2F4F4F',
         hat: '#FF6347',
