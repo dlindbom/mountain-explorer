@@ -19,6 +19,13 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
         ctx.fillText(`Bäst: ${player.maxHeight} m`, canvas.width / 2, 50);
     }
 
+    // Karaktärsnamn (liten text)
+    if (player.characterName) {
+        ctx.font = '10px monospace';
+        ctx.fillStyle = player.colors ? player.colors.jacket : 'rgba(255,255,255,0.4)';
+        ctx.fillText(player.characterName, canvas.width / 2, 62);
+    }
+
     // Starthjälp
     if (height === 0 && player.vy === 0 && gameState === 'playing') {
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -86,10 +93,12 @@ function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player) {
         if (stateTimer > 60) {
             ctx.font = '14px monospace';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.fillText(
-                isTouchDevice ? 'Tryck för att försöka igen' : 'Tryck mellanslag',
-                canvas.width / 2, canvas.height / 2 + 50
-            );
+            if (isTouchDevice) {
+                ctx.fillText('Tryck för att försöka igen', canvas.width / 2, canvas.height / 2 + 50);
+            } else {
+                ctx.fillText('Mellanslag = försök igen', canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Escape = byt karaktär', canvas.width / 2, canvas.height / 2 + 70);
+            }
         }
     }
 }

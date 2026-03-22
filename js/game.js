@@ -22,26 +22,57 @@ window.addEventListener('resize', resizeCanvas);
 
 // Spelstate
 let level = new Level();
-let player = new Player(380, level.groundY - 32);
+let player = null;
 let bears = [];
 let rockfall = new RockfallManager();
 let cameraY = 0;
-let gameState = 'playing';
+let gameState = 'charselect'; // Börjar med karaktärsval
 let stateTimer = 0;
 let deathCause = '';
 let nextBearHeight = 100;
-let nextYetiHeight = 200; // Första yeti vid 200m
+let nextYetiHeight = 200;
 let bearWarning = 0;
 let enemyWarningText = 'BJÖRN!';
+let selectedCharacter = null;
+let savedMaxHeight = 0;
 
 // Koppla input
 setupInput(canvas, () => gameState, () => stateTimer, restartGame);
 
-function restartGame() {
-    const savedMax = player.maxHeight;
+// Karaktärsval via klick/touch
+canvas.addEventListener('click', handleCharacterClick);
+canvas.addEventListener('touchend', (e) => {
+    if (gameState !== 'charselect') return;
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    const chosen = getSelectedCharacter(cx, cy);
+    if (chosen) startGame(chosen);
+});
+
+// Karaktärsval via tangentbord
+window.addEventListener('keydown', (e) => {
+    if (gameState !== 'charselect') return;
+    if (e.key === '1') startGame('alfred');
+    if (e.key === '2') startGame('astrid');
+});
+
+function handleCharacterClick(e) {
+    if (gameState !== 'charselect') return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const chosen = getSelectedCharacter(cx, cy);
+    if (chosen) startGame(chosen);
+}
+
+function startGame(characterId) {
+    selectedCharacter = characterId;
     level = new Level();
-    player = new Player(380, level.groundY - 32);
-    player.maxHeight = savedMax;
+    player = new Player(380, level.groundY - 32, characterId);
+    player.maxHeight = savedMaxHeight;
     bears = [];
     rockfall.reset();
     nextBearHeight = 100;
@@ -52,23 +83,35 @@ function restartGame() {
     stateTimer = 0;
 }
 
-// Fiende-spawning (björnar och yetis)
+function restartGame() {
+    if (!selectedCharacter) {
+        gameState = 'charselect';
+        return;
+    }
+    savedMaxHeight = player ? player.maxHeight : 0;
+    startGame(selectedCharacter);
+}
+
+function goToCharacterSelect() {
+    savedMaxHeight = player ? player.maxHeight : 0;
+    gameState = 'charselect';
+    selectedCharacter = null;
+}
+
+// Fiende-spawning
 function updateEnemies() {
     const height = player.getHeight();
 
-    // Björn var 100:e meter
     if (height >= nextBearHeight && gameState === 'playing') {
         spawnEnemy('bear');
         nextBearHeight += 100;
     }
 
-    // Yeti var 200:e meter (börjar vid 200m)
     if (height >= nextYetiHeight && gameState === 'playing') {
         spawnEnemy('yeti');
         nextYetiHeight += 200;
     }
 
-    // Uppdatera alla fiender
     for (const enemy of bears) {
         enemy.update(player.x + player.width / 2);
         if (enemy.platformX !== undefined) {
@@ -110,6 +153,13 @@ function spawnEnemy(type) {
 
 // Huvudloop
 function gameLoop() {
+    // === KARAKTÄRSVAL ===
+    if (gameState === 'charselect') {
+        drawCharacterSelect(ctx, canvas);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
     // === UPPDATERA ===
     if (gameState === 'playing') {
         player.update(keys, level.platforms, level.ladders);
@@ -117,14 +167,12 @@ function gameLoop() {
         updateEnemies();
         rockfall.update(player.y, player.getHeight(), level.groundY);
 
-        // Spikar
         if (player.hitSpikes) {
             gameState = 'dead';
             deathCause = 'Spikar!';
             stateTimer = 0;
         }
 
-        // Fiende-kollision
         for (const enemy of bears) {
             if (enemy.collidesWith(player)) {
                 gameState = 'dead';
@@ -134,23 +182,24 @@ function gameLoop() {
             }
         }
 
-        // Stenras-kollision
         if (rockfall.checkCollision(player)) {
             gameState = 'dead';
             deathCause = 'Stenras!';
             stateTimer = 0;
         }
 
-        // Föll för långt
         if (player.y > player.lastGroundY + 500 || player.y > level.groundY + 100) {
             gameState = 'dead';
             deathCause = 'Du föll!';
             stateTimer = 0;
         }
-    } else {
+    } else if (gameState === 'dead') {
         stateTimer++;
         if (bearWarning > 0) bearWarning--;
-        if (gameState === 'dead' && stateTimer > 90 && keys[' ']) restartGame();
+        if (stateTimer > 90) {
+            if (keys[' ']) restartGame();
+            if (keys['Escape']) goToCharacterSelect();
+        }
     }
 
     if (bearWarning > 0 && gameState === 'playing') bearWarning--;

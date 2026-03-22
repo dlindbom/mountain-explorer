@@ -1,7 +1,35 @@
 // Spelarkaraktären - en liten bergsklättrare
 
+// Karaktärsdata
+const CHARACTERS = {
+    alfred: {
+        name: 'Alfred',
+        desc: 'Hoppar 50% högre',
+        speed: 4.5,
+        jumpForce: -15.75, // 50% högre (-10.5 * 1.5)
+        climbSpeed: 3,
+        // Färger
+        jacket: '#3B7DD8',   // Blå jacka
+        pants: '#3D5A40',
+        hat: '#E8A030',      // Orange mössa
+        backpack: '#5A3A8A', // Lila ryggsäck
+    },
+    astrid: {
+        name: 'Astrid',
+        desc: 'Springer 50% snabbare',
+        speed: 6.75, // 50% snabbare (4.5 * 1.5)
+        jumpForce: -10.5,
+        climbSpeed: 4, // Lite snabbare klättring också
+        // Färger
+        jacket: '#D44B8A',   // Rosa jacka
+        pants: '#4A3D6B',
+        hat: '#44B89D',      // Turkos mössa
+        backpack: '#C85A30', // Orange ryggsäck
+    }
+};
+
 class Player {
-    constructor(x, y) {
+    constructor(x, y, characterId) {
         this.startX = x;
         this.startY = y;
         this.x = x;
@@ -10,8 +38,6 @@ class Player {
         this.height = 32;
         this.vx = 0;
         this.vy = 0;
-        this.speed = 4.5;
-        this.jumpForce = -10.5;
         this.gravity = 0.5;
         this.onGround = false;
         this.facing = 1;
@@ -20,10 +46,18 @@ class Player {
         this.hitSpikes = false;
         this.lastGroundY = y;
 
+        // Karaktärsval
+        this.characterId = characterId || 'alfred';
+        const char = CHARACTERS[this.characterId];
+        this.characterName = char.name;
+        this.speed = char.speed;
+        this.jumpForce = char.jumpForce;
+        this.climbSpeed = char.climbSpeed;
+        this.colors = char;
+
         // Klättring
         this.climbing = false;
         this.currentLadder = null;
-        this.climbSpeed = 3;
         this.climbFrame = 0;
     }
 
@@ -219,35 +253,29 @@ class Player {
 
     drawClimbing(ctx, sx, sy) {
         const offset = Math.sin(this.climbFrame * Math.PI) * 3;
+        const c = this.colors;
 
-        // Armar (på stegrailsen)
         ctx.fillStyle = '#FFDAB9';
         ctx.fillRect(sx - 4, sy + 3 - offset, 5, 10);
         ctx.fillRect(sx + this.width - 1, sy + 3 + offset, 5, 10);
 
-        // Ben
-        ctx.fillStyle = '#3D5A40';
+        ctx.fillStyle = c.pants;
         ctx.fillRect(sx + 4, sy + 24 + offset, 7, 8);
         ctx.fillRect(sx + 13, sy + 24 - offset, 7, 8);
 
-        // Kängor
         ctx.fillStyle = '#5C4033';
         ctx.fillRect(sx + 3, sy + 30, 9, 3);
         ctx.fillRect(sx + 12, sy + 30, 9, 3);
 
-        // Kropp
-        ctx.fillStyle = '#E63946';
+        ctx.fillStyle = c.jacket;
         ctx.fillRect(sx + 3, sy + 12, this.width - 6, 13);
 
-        // Huvud
         ctx.fillStyle = '#FFDAB9';
         ctx.fillRect(sx + 5, sy + 3, this.width - 10, 11);
 
-        // Mössa
-        ctx.fillStyle = '#457B9D';
+        ctx.fillStyle = c.hat;
         ctx.fillRect(sx + 4, sy, this.width - 8, 6);
 
-        // Ögon (tittar uppåt)
         ctx.fillStyle = '#1D3557';
         ctx.fillRect(sx + 8, sy + 5, 2, 2);
         ctx.fillRect(sx + 14, sy + 5, 2, 2);
@@ -255,6 +283,7 @@ class Player {
 
     drawNormal(ctx, sx, sy) {
         const legOffset = Math.sin(this.walkFrame * Math.PI) * 3;
+        const c = this.colors;
 
         // Skugga
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -263,7 +292,7 @@ class Player {
         ctx.fill();
 
         // Ben
-        ctx.fillStyle = '#3D5A40';
+        ctx.fillStyle = c.pants;
         if (this.onGround && this.vx !== 0) {
             ctx.fillRect(sx + 4, sy + 24 + legOffset, 7, 8 - legOffset);
             ctx.fillRect(sx + 13, sy + 24 - legOffset, 7, 8 + legOffset);
@@ -278,12 +307,12 @@ class Player {
         ctx.fillRect(sx + 12, sy + 30, 9, 3);
 
         // Kropp
-        ctx.fillStyle = '#E63946';
+        ctx.fillStyle = c.jacket;
         ctx.fillRect(sx + 3, sy + 12, this.width - 6, 13);
 
         // Ryggsäck
         const backX = this.facing === 1 ? sx : sx + this.width - 6;
-        ctx.fillStyle = '#A8553A';
+        ctx.fillStyle = c.backpack;
         ctx.fillRect(backX, sy + 13, 6, 10);
 
         // Huvud
@@ -291,7 +320,7 @@ class Player {
         ctx.fillRect(sx + 5, sy + 3, this.width - 10, 11);
 
         // Mössa
-        ctx.fillStyle = '#457B9D';
+        ctx.fillStyle = c.hat;
         ctx.fillRect(sx + 4, sy, this.width - 8, 6);
         ctx.fillRect(sx + 7, sy - 2, this.width - 14, 3);
 
