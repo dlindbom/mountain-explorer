@@ -66,10 +66,11 @@ const CHARACTERS = {
     },
     bob: {
         name: 'Bob',
-        desc: 'Hoppar 30m högre!',
+        desc: 'Hoppar 27m högre, 75 HP',
         speed: 4.5,
-        jumpForce: -17.3,
+        jumpForce: -15.57,    // 10% lägre (-17.3 * 0.9)
         climbSpeed: 3,
+        maxHealth: 75,        // 25% mindre
         cost: 700,
         jacket: '#1E90FF',
         pants: '#2F4F4F',
