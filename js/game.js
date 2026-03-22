@@ -38,6 +38,7 @@ let enemyWarningText = 'BJÖRN!';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
 let deathCutscene = null;
+let victoryCutscene = null;
 
 // Örn-system
 let eagles = [];
@@ -75,13 +76,16 @@ canvas.addEventListener('click', (e) => {
 });
 
 canvas.addEventListener('touchend', (e) => {
-    if (gameState !== 'charselect' && gameState !== 'levelselect') return;
-    const touch = e.changedTouches[0];
-    if (!touch) return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
-    const cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
-    handleMenuClick(cx, cy);
+    if (gameState === 'charselect' || gameState === 'levelselect') {
+        const touch = e.changedTouches[0];
+        if (!touch) return;
+        const rect = canvas.getBoundingClientRect();
+        const cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
+        const cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
+        handleMenuClick(cx, cy);
+    } else if (gameState === 'victoryCutscene' && victoryCutscene && victoryCutscene.canContinue) {
+        gameState = 'levelselect';
+    }
 });
 
 window.addEventListener('keydown', (e) => {
@@ -280,9 +284,10 @@ function gameLoop() {
         // Kolla om spelaren nått bergets topp
         if (!levelCompleted && player.getHeight() >= levelProgress.getTargetHeight()) {
             levelCompleted = true;
+            const mountain = levelProgress.getCurrentMountain();
             levelProgress.completeCurrentLevel();
-            bearWarning = 180;
-            enemyWarningText = 'TOPPEN!';
+            gameState = 'victoryCutscene';
+            victoryCutscene = new VictoryCutscene(mountain, player.colors);
         }
 
         // Lava = 40 skada (vattenhink skyddar)
@@ -371,12 +376,21 @@ function gameLoop() {
                 if (keys['Escape']) goToCharacterSelect();
             }
         }
+    } else if (gameState === 'victoryCutscene') {
+        if (victoryCutscene) {
+            victoryCutscene.update();
+            if (victoryCutscene.canContinue) {
+                if (keys[' '] || keys['Escape']) {
+                    gameState = 'levelselect';
+                }
+            }
+        }
     }
 
     if (bearWarning > 0 && gameState === 'playing') bearWarning--;
 
     // Kamera
-    if (gameState !== 'cutscene') {
+    if (gameState !== 'cutscene' && gameState !== 'victoryCutscene') {
         const targetCameraY = player.y - canvas.height * 0.45;
         cameraY += (targetCameraY - cameraY) * 0.08;
     }
@@ -384,6 +398,8 @@ function gameLoop() {
     // === RITA ===
     if (gameState === 'cutscene' && deathCutscene) {
         deathCutscene.draw(ctx, canvas);
+    } else if (gameState === 'victoryCutscene' && victoryCutscene) {
+        victoryCutscene.draw(ctx, canvas);
     } else {
         drawBackground(ctx, canvas, cameraY);
         drawLevel(ctx, level, cameraY, canvas.height);
