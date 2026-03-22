@@ -47,7 +47,20 @@ const CHARACTERS = {
         jacket: '#FFD700',    // Guld jacka
         pants: '#1A1A2E',
         hat: '#FF4500',       // Eldröd mössa
-        backpack: '#FFD700',  // Guld ryggsäck
+        backpack: '#FFD700',
+    },
+    alvis: {
+        name: 'Alvis',
+        desc: 'Dubbla pengar!',
+        speed: 3.5,           // Långsammare
+        jumpForce: -13.65,    // Samma hopp som Alfred
+        climbSpeed: 2.5,
+        maxHealth: 110,
+        coinMultiplier: 2,    // Dubbla pengar
+        jacket: '#2E8B57',    // Grön jacka
+        pants: '#1B5E20',
+        hat: '#3CB371',       // Ljusgrön mössa
+        backpack: '#228B22',  // Grön ryggsäck
     }
 };
 
@@ -66,6 +79,7 @@ class Player {
         this.climbSpeed = char.climbSpeed;
         this.colors = char;
         this.scale = char.scale || 1;
+        this.coinMultiplier = char.coinMultiplier || 1;
 
         this.width = Math.round(24 * this.scale);
         this.height = Math.round(32 * this.scale);

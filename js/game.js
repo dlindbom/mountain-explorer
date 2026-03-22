@@ -37,6 +37,7 @@ let enemyWarningText = 'BJÖRN!';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
 let gotNewRecord = false;
+let recordEarned = 0;
 let deathCutscene = null;
 
 // Örn-system
@@ -68,6 +69,8 @@ window.addEventListener('keydown', (e) => {
     if (e.key === '1') startGame('alfred');
     if (e.key === '2') startGame('astrid');
     if (e.key === '3') startGame('pappa');
+    if (e.key === '4') startGame('jeff');
+    if (e.key === '5') startGame('alvis');
 });
 
 function handleCharacterClick(e) {
@@ -312,7 +315,9 @@ function gameLoop() {
         if (player.isDead()) {
             gameState = 'cutscene';
             stateTimer = 0;
-            gotNewRecord = economy.processRun(player.maxHeight);
+            const earned = economy.processRun(player.maxHeight, player.coinMultiplier);
+            gotNewRecord = earned > 0;
+            recordEarned = earned;
 
             // Bestäm cutscene-typ utifrån dödsorsak
             let cutsceneType = 'fall';
@@ -370,7 +375,7 @@ function gameLoop() {
         powerups.drawActiveEffect(ctx, canvas, player);
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
-    if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord);
+    if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord, recordEarned);
 
     requestAnimationFrame(gameLoop);
 }

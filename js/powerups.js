@@ -283,8 +283,8 @@ class PowerupManager {
             this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
             player.hasBat = true;
         } else if (item.type === 'gold') {
-            // +10 kronor
-            economy.coins += 10;
+            // +10 kronor (multiplicerat)
+            economy.coins += 10 * (player.coinMultiplier || 1);
             economy.save();
         } else if (item.type === 'medkit') {
             // Återställ 50 HP

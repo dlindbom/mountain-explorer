@@ -1,6 +1,6 @@
 // Karaktärsval-skärm med ekonomi
 
-const ALL_CHARACTER_IDS = ['alfred', 'astrid', 'pappa', 'jeff'];
+const ALL_CHARACTER_IDS = ['alfred', 'astrid', 'pappa', 'jeff', 'alvis'];
 
 function drawCharacterSelect(ctx, canvas) {
     // Bakgrund
@@ -42,7 +42,7 @@ function drawCharacterSelect(ctx, canvas) {
 
     // Kort
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = 175;
+    const cardW = count <= 4 ? 175 : 148;
     const cardH = 360;
     const cardY = 118;
     const gap = 12;
@@ -113,9 +113,16 @@ function drawCharacterCard(ctx, x, y, w, h, char, id, keyNum, unlocked) {
 
     const bar = (pct) => pct > 100 ? '██████████' : '██████░░░░';
 
-    ctx.fillText(`⬆ ${bar(jumpPct)} ${jumpPct}%`, x + w / 2, descY + 22);
-    ctx.fillText(`➡ ${bar(speedPct)} ${speedPct}%`, x + w / 2, descY + 37);
-    ctx.fillText(`♥ ${bar(hpPct)} ${hpPct}%`, x + w / 2, descY + 52);
+    const coinMult = char.coinMultiplier || 1;
+
+    ctx.fillText(`⬆ ${bar(jumpPct)} ${jumpPct}%`, x + w / 2, descY + 20);
+    ctx.fillText(`➡ ${bar(speedPct)} ${speedPct}%`, x + w / 2, descY + 33);
+    ctx.fillText(`♥ ${bar(hpPct)} ${hpPct}%`, x + w / 2, descY + 46);
+    if (coinMult > 1) {
+        ctx.fillStyle = unlocked ? '#FFD700' : 'rgba(255,215,0,0.3)';
+        ctx.fillText(`💰 x${coinMult} PENGAR`, x + w / 2, descY + 59);
+        ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)';
+    }
 
     if ((char.scale || 1) > 1) {
         ctx.fillText(`📏 ${Math.round(char.scale * 100)}%`, x + w / 2, descY + 67);
@@ -197,7 +204,7 @@ function drawCharacterPreview(ctx, x, y, char, s, id) {
 // Kolla om ett klick/touch träffar ett kort (eller köp-knapp)
 function getSelectedCharacter(canvasX, canvasY) {
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = 175;
+    const cardW = count <= 4 ? 175 : 148;
     const cardH = 360;
     const cardY = 118;
     const gap = 12;

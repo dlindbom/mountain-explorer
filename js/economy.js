@@ -6,7 +6,7 @@ const SAVE_KEY = 'mountainExplorer_save';
 const economy = {
     coins: 0,
     bestHeight: 0,
-    unlockedCharacters: ['alfred', 'astrid', 'pappa'], // Gratis från start
+    unlockedCharacters: ['alfred', 'astrid', 'pappa', 'alvis'], // Gratis från start
 
     load() {
         try {
@@ -34,15 +34,15 @@ const economy = {
     },
 
     // Anropas efter varje spelomgång med spelarens höjd
-    processRun(height) {
+    processRun(height, coinMultiplier) {
+        const mult = coinMultiplier || 1;
         if (height > this.bestHeight) {
-            // Nytt rekord! +10 kr
-            this.coins += 10;
+            this.coins += 10 * mult;
             this.bestHeight = height;
             this.save();
-            return true; // Nytt rekord
+            return 10 * mult; // Returnera antal kr
         }
-        return false;
+        return 0;
     },
 
     canAfford(characterId) {

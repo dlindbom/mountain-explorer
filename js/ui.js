@@ -180,7 +180,7 @@ function drawHealthBar(ctx, player) {
     ctx.textAlign = 'center'; // Återställ
 }
 
-function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord) {
+function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord, recordEarned) {
     const alpha = Math.min(0.7, stateTimer / 60);
     ctx.fillStyle = `rgba(80,0,0,${alpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -200,7 +200,7 @@ function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewReco
         if (gotNewRecord) {
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 16px monospace';
-            ctx.fillText('NYTT REKORD! +10 kr', canvas.width / 2, cy + 15);
+            ctx.fillText(`NYTT REKORD! +${recordEarned || 10} kr`, canvas.width / 2, cy + 15);
         }
 
         ctx.fillStyle = '#FFD700';
