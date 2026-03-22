@@ -1,4 +1,4 @@
-// Level-data: procedural generering av avsatser, broar, stegar och spikar
+// Level-data: procedural generering av avsatser, broar, stegar och lava
 // All rendering ligger i levelRenderer.js
 
 class Level {
@@ -45,13 +45,15 @@ class Level {
                 type: 'ledge', fromWall: side
             };
 
-            // Spikar på vissa avsatser
-            const spikeChance = 0.1 + difficulty * 0.25;
-            if (this.totalPlatforms > 5 && Math.random() < spikeChance && width > 120) {
-                const spikeWidth = 20 + Math.random() * 20 + difficulty * 10;
+            // Lava på vissa avsatser
+            const lavaChance = 0.1 + difficulty * 0.25;
+            if (this.totalPlatforms > 5 && Math.random() < lavaChance && width > 120) {
+                const lavaWidth = 20 + Math.random() * 25 + difficulty * 15;
                 const safeZone = 35;
-                ledge.spikeStart = safeZone + Math.random() * (width - safeZone * 2 - spikeWidth);
-                ledge.spikeWidth = spikeWidth;
+                ledge.lavaStart = safeZone + Math.random() * (width - safeZone * 2 - lavaWidth);
+                ledge.lavaWidth = lavaWidth;
+                ledge.lavaGrowth = 0.003 + Math.random() * 0.004; // Växttakt
+                ledge.lavaTime = 0; // Tidräknare för animering
             }
 
             this.platforms.push(ledge);
@@ -74,9 +76,11 @@ class Level {
         };
 
         if (this.sectionCount > 2 && Math.random() < 0.15 + difficulty * 0.2) {
-            const spikeWidth = 25 + Math.random() * 20 + difficulty * 15;
-            bridge.spikeStart = 200 + Math.random() * (400 - spikeWidth);
-            bridge.spikeWidth = spikeWidth;
+            const lavaWidth = 25 + Math.random() * 25 + difficulty * 15;
+            bridge.lavaStart = 200 + Math.random() * (400 - lavaWidth);
+            bridge.lavaWidth = lavaWidth;
+            bridge.lavaGrowth = 0.003 + Math.random() * 0.004;
+            bridge.lavaTime = 0;
         }
 
         this.platforms.push(bridge);
@@ -93,6 +97,18 @@ class Level {
 
     update(playerY) {
         this.generateUpTo(playerY - 700);
+
+        // Uppdatera lava (växer sakta)
+        for (const p of this.platforms) {
+            if (p.lavaStart === undefined) continue;
+            p.lavaTime = (p.lavaTime || 0) + 1;
+            // Lavan växer långsamt åt båda hållen
+            const growth = p.lavaGrowth || 0.004;
+            const maxGrow = p.width * 0.4; // Max 40% av plattformen
+            const grow = Math.min(maxGrow, p.lavaTime * growth);
+            p.lavaCurrentWidth = p.lavaWidth + grow;
+            p.lavaCurrentStart = p.lavaStart - grow / 2;
+        }
         this.cleanup(playerY);
     }
 }

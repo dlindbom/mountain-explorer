@@ -76,7 +76,7 @@ class Player {
         this.facing = 1;
         this.maxHeight = 0;
         this.walkFrame = 0;
-        this.hitSpikes = false;
+        this.inLava = false;
         this.lastGroundY = y;
 
         // Hälsa
@@ -103,7 +103,7 @@ class Player {
         this.vx = 0;
         this.vy = 0;
         this.onGround = false;
-        this.hitSpikes = false;
+        this.inLava = false;
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
         this.climbing = false;
@@ -111,7 +111,7 @@ class Player {
     }
 
     update(keys, platforms, ladders) {
-        this.hitSpikes = false;
+        this.inLava = false;
 
         if (this.climbing) {
             this.updateClimbing(keys, ladders);
@@ -243,12 +243,14 @@ class Player {
                 this.onGround = true;
                 this.lastGroundY = this.y;
 
-                // Kolla om vi landade på spikar
-                if (p.spikeStart !== undefined) {
-                    const spikeLeft = p.x + p.spikeStart;
-                    const spikeRight = spikeLeft + p.spikeWidth;
-                    if (this.x + this.width - 2 > spikeLeft && this.x + 2 < spikeRight) {
-                        this.hitSpikes = true;
+                // Kolla om vi landade i lava (använd aktuell storlek)
+                if (p.lavaStart !== undefined) {
+                    const ls = p.lavaCurrentStart !== undefined ? p.lavaCurrentStart : p.lavaStart;
+                    const lw = p.lavaCurrentWidth !== undefined ? p.lavaCurrentWidth : p.lavaWidth;
+                    const lavaLeft = p.x + ls;
+                    const lavaRight = lavaLeft + lw;
+                    if (this.x + this.width - 2 > lavaLeft && this.x + 2 < lavaRight) {
+                        this.inLava = true;
                     }
                 }
 

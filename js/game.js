@@ -218,10 +218,10 @@ function gameLoop() {
         updateEagles();
         rockfall.update(player.y, player.getHeight(), level.groundY);
 
-        // Spikar = instant death
-        if (player.hitSpikes) {
-            player.takeDamage(player.maxHealth);
-            deathCause = 'Spikar!';
+        // Lava = 40 skada
+        if (player.inLava) {
+            player.takeDamage(40);
+            if (player.isDead()) deathCause = 'Lava!';
         }
 
         // Fiende-kollision (björnar/yetis)

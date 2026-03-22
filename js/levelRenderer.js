@@ -1,4 +1,4 @@
-// Level-rendering: ritar klippmassa, ytor, broar, stegar och spikar
+// Level-rendering: ritar klippmassa, ytor, broar, stegar och lava
 
 function drawLevel(ctx, level, cameraY, canvasHeight) {
     // Pass 1: Klippmassa under avsatser (bakom allt)
@@ -23,7 +23,7 @@ function drawLevel(ctx, level, cameraY, canvasHeight) {
         else if (p.type === 'bridge') drawBridge(ctx, p, sy);
         else drawLedgeSurface(ctx, p, sy);
 
-        if (p.spikeStart !== undefined) drawSpikes(ctx, p, sy);
+        if (p.lavaStart !== undefined) drawLava(ctx, p, sy);
     }
 }
 
@@ -184,35 +184,81 @@ function drawBridge(ctx, p, sy) {
 
 // === SPIKAR ===
 
-function drawSpikes(ctx, p, sy) {
-    const spikeX = p.x + p.spikeStart;
-    const spikeW = p.spikeWidth;
-    const spikeH = 12;
+function drawLava(ctx, p, sy) {
+    const ls = p.lavaCurrentStart !== undefined ? p.lavaCurrentStart : p.lavaStart;
+    const lw = p.lavaCurrentWidth !== undefined ? p.lavaCurrentWidth : p.lavaWidth;
+    const lavaX = p.x + ls;
+    const lavaH = 8;
+    const time = p.lavaTime || 0;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(spikeX, sy - 1, spikeW, 3);
+    // Glödande bas under lavan
+    const glowGrad = ctx.createRadialGradient(
+        lavaX + lw / 2, sy - 2, 2,
+        lavaX + lw / 2, sy - 2, lw * 0.7
+    );
+    glowGrad.addColorStop(0, 'rgba(255, 100, 0, 0.25)');
+    glowGrad.addColorStop(1, 'rgba(255, 50, 0, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(lavaX - 10, sy - 15, lw + 20, 20);
 
-    const count = Math.max(2, Math.floor(spikeW / 11));
-    const spacing = spikeW / count;
+    // Lava-kropp (vågig ovansida)
+    ctx.fillStyle = '#CC3300';
+    ctx.beginPath();
+    ctx.moveTo(lavaX, sy);
+    for (let x = 0; x <= lw; x += 4) {
+        const wave = Math.sin((x + time * 0.8) * 0.15) * 3 +
+                     Math.sin((x + time * 1.2) * 0.25) * 2;
+        ctx.lineTo(lavaX + x, sy - lavaH + 2 - wave);
+    }
+    ctx.lineTo(lavaX + lw, sy);
+    ctx.fill();
 
-    for (let i = 0; i < count; i++) {
-        const x = spikeX + i * spacing + 1;
-        const w = spacing - 2;
+    // Ljusare övre lager (het yta)
+    ctx.fillStyle = '#FF6600';
+    ctx.beginPath();
+    ctx.moveTo(lavaX + 2, sy - 1);
+    for (let x = 2; x <= lw - 2; x += 3) {
+        const wave = Math.sin((x + time * 0.6) * 0.2) * 2 +
+                     Math.sin((x + time * 1.5) * 0.3) * 1.5;
+        ctx.lineTo(lavaX + x, sy - lavaH + 4 - wave);
+    }
+    ctx.lineTo(lavaX + lw - 2, sy - 1);
+    ctx.fill();
 
-        ctx.fillStyle = '#707070';
+    // Ljusa hotspots (gula fläckar)
+    ctx.fillStyle = '#FFAA00';
+    const spotCount = Math.max(1, Math.floor(lw / 20));
+    for (let i = 0; i < spotCount; i++) {
+        const spotX = lavaX + 8 + ((i * 23 + time * 0.3) % (lw - 16));
+        const spotW = 5 + Math.sin(time * 0.05 + i) * 3;
+        const spotY = sy - lavaH + 3 + Math.sin(time * 0.08 + i * 2) * 2;
         ctx.beginPath();
-        ctx.moveTo(x, sy);
-        ctx.lineTo(x + w / 2, sy - spikeH);
-        ctx.lineTo(x + w, sy);
-        ctx.fill();
-
-        ctx.fillStyle = '#904040';
-        ctx.beginPath();
-        ctx.moveTo(x + w / 2 - 2, sy - spikeH + 4);
-        ctx.lineTo(x + w / 2, sy - spikeH);
-        ctx.lineTo(x + w / 2 + 2, sy - spikeH + 4);
+        ctx.ellipse(spotX, spotY, spotW, 2, 0, 0, Math.PI * 2);
         ctx.fill();
     }
+
+    // Vita glödpunkter (hetaste)
+    ctx.fillStyle = '#FFE0A0';
+    for (let i = 0; i < spotCount; i++) {
+        const hx = lavaX + 12 + ((i * 31 + time * 0.5) % (lw - 20));
+        const hy = sy - lavaH + 4 + Math.sin(time * 0.1 + i * 3) * 1.5;
+        ctx.fillRect(hx, hy, 2, 1);
+    }
+
+    // Partiklar/gnistor ovanför
+    ctx.fillStyle = 'rgba(255, 150, 0, 0.6)';
+    for (let i = 0; i < 3; i++) {
+        const px = lavaX + ((i * 37 + time * 0.7) % lw);
+        const py = sy - lavaH - 2 - ((time * 0.5 + i * 20) % 12);
+        const alpha = 1 - ((time * 0.5 + i * 20) % 12) / 12;
+        ctx.fillStyle = `rgba(255, 150, 0, ${alpha * 0.5})`;
+        ctx.fillRect(px, py, 2, 2);
+    }
+
+    // Mörka kanter
+    ctx.fillStyle = 'rgba(100, 20, 0, 0.6)';
+    ctx.fillRect(lavaX, sy - 2, 2, 3);
+    ctx.fillRect(lavaX + lw - 2, sy - 2, 2, 3);
 }
 
 // === STEGAR ===
