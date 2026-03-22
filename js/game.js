@@ -25,6 +25,7 @@ let level = new Level();
 let player = null;
 let bears = [];
 let rockfall = new RockfallManager();
+let powerups = new PowerupManager();
 let cameraY = 0;
 let gameState = 'charselect'; // Börjar med karaktärsval
 let stateTimer = 0;
@@ -86,6 +87,7 @@ function startGame(characterId) {
     bears = [];
     eagles = [];
     rockfall.reset();
+    powerups.reset();
     nextBearHeight = 100;
     nextYetiHeight = 200;
     bearWarning = 0;
@@ -202,6 +204,38 @@ function updateEagles() {
     eagles = eagles.filter(e => e.active);
 }
 
+// Raketeld under spelaren vid raketstövlar
+function drawRocketFlame(ctx, player, cameraY) {
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height - cameraY;
+    const time = Date.now() * 0.01;
+
+    for (let i = 0; i < 6; i++) {
+        const fx = px + (Math.random() - 0.5) * 12;
+        const fy = py + 5 + Math.random() * 15;
+        const size = 3 + Math.random() * 5;
+
+        if (Math.random() > 0.3) {
+            ctx.fillStyle = '#FF6600';
+        } else if (Math.random() > 0.5) {
+            ctx.fillStyle = '#FFAA00';
+        } else {
+            ctx.fillStyle = '#FFDD44';
+        }
+        ctx.fillRect(fx - size / 2, fy, size, size);
+    }
+
+    // Rök
+    ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
+    for (let i = 0; i < 3; i++) {
+        const sx = px + (Math.random() - 0.5) * 8;
+        const sy = py + 20 + Math.random() * 10;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3 + Math.random() * 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 // Huvudloop
 function gameLoop() {
     // === KARAKTÄRSVAL ===
@@ -218,6 +252,7 @@ function gameLoop() {
         updateEnemies();
         updateEagles();
         rockfall.update(player.y, player.getHeight(), level.groundY);
+        powerups.update(player, level);
 
         // Lava = 40 skada
         if (player.inLava) {
@@ -306,11 +341,19 @@ function gameLoop() {
     } else {
         drawBackground(ctx, canvas, cameraY);
         drawLevel(ctx, level, cameraY, canvas.height);
+        powerups.draw(ctx, cameraY);
         rockfall.draw(ctx, cameraY);
         for (const enemy of bears) enemy.draw(ctx, cameraY);
         for (const eagle of eagles) eagle.draw(ctx, cameraY);
+
+        // Raketeld under spelaren
+        if (powerups.isRocketActive()) {
+            drawRocketFlame(ctx, player, cameraY);
+        }
+
         player.draw(ctx, cameraY);
         rockfall.drawWarning(ctx, canvas);
+        powerups.drawActiveEffect(ctx, canvas);
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
     if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord);
