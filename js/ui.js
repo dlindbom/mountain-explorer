@@ -26,6 +26,9 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
         ctx.fillText(player.characterName, canvas.width / 2, 62);
     }
 
+    // Hälsomätare (vänster uppe)
+    drawHealthBar(ctx, player);
+
     // Starthjälp
     if (height === 0 && player.vy === 0 && gameState === 'playing') {
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -76,6 +79,49 @@ function drawTouchControls(ctx) {
         ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
     }
     ctx.textBaseline = 'alphabetic';
+}
+
+function drawHealthBar(ctx, player) {
+    const barX = 15;
+    const barY = 15;
+    const barW = 120;
+    const barH = 14;
+    const healthPct = player.health / player.maxHealth;
+
+    // Bakgrund
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    roundRect(ctx, barX - 3, barY - 3, barW + 6, barH + 6, 5);
+    ctx.fill();
+
+    // Tom bar
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(barX, barY, barW, barH);
+
+    // Hälsobar (färg ändras med nivå)
+    let barColor;
+    if (healthPct > 0.6) {
+        barColor = '#4CAF50'; // Grön
+    } else if (healthPct > 0.3) {
+        barColor = '#FF9800'; // Orange
+    } else {
+        barColor = '#F44336'; // Röd
+    }
+    ctx.fillStyle = barColor;
+    ctx.fillRect(barX, barY, barW * healthPct, barH);
+
+    // Pulsera rött vid låg hälsa
+    if (healthPct <= 0.3 && healthPct > 0) {
+        const pulse = 0.3 + Math.sin(Date.now() * 0.008) * 0.2;
+        ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+        ctx.fillRect(barX, barY, barW * healthPct, barH);
+    }
+
+    // Text
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`HP ${Math.ceil(player.health)}`, barX + 4, barY + 11);
+    ctx.textAlign = 'center'; // Återställ
 }
 
 function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player) {

@@ -46,6 +46,10 @@ class Player {
         this.hitSpikes = false;
         this.lastGroundY = y;
 
+        // Hälsa
+        this.maxHealth = 100;
+        this.health = 100;
+
         // Karaktärsval
         this.characterId = characterId || 'alfred';
         const char = CHARACTERS[this.characterId];
@@ -61,6 +65,14 @@ class Player {
         this.climbFrame = 0;
     }
 
+    takeDamage(amount) {
+        this.health = Math.max(0, this.health - amount);
+    }
+
+    isDead() {
+        return this.health <= 0;
+    }
+
     reset() {
         this.x = this.startX;
         this.y = this.startY;
@@ -69,6 +81,7 @@ class Player {
         this.onGround = false;
         this.hitSpikes = false;
         this.lastGroundY = this.startY;
+        this.health = this.maxHealth;
         this.climbing = false;
         this.currentLadder = null;
     }

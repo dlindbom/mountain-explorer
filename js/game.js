@@ -167,30 +167,42 @@ function gameLoop() {
         updateEnemies();
         rockfall.update(player.y, player.getHeight(), level.groundY);
 
+        // Spikar = instant death
         if (player.hitSpikes) {
-            gameState = 'dead';
+            player.takeDamage(player.maxHealth);
             deathCause = 'Spikar!';
-            stateTimer = 0;
         }
 
+        // Fiende-kollision
         for (const enemy of bears) {
             if (enemy.collidesWith(player)) {
-                gameState = 'dead';
-                deathCause = enemy instanceof Yeti ? 'Yetin krossade dig!' : 'Björnen tog dig!';
-                stateTimer = 0;
-                break;
+                if (enemy instanceof Yeti) {
+                    // Yeti = instant death
+                    player.takeDamage(player.maxHealth);
+                    deathCause = 'Yetin krossade dig!';
+                } else {
+                    // Björn = 50 skada per sekund (≈0.83/frame vid 60fps)
+                    player.takeDamage(50 / 60);
+                    if (player.isDead()) deathCause = 'Björnen tog dig!';
+                }
             }
         }
 
+        // Stenras = 25 skada per träff
         if (rockfall.checkCollision(player)) {
-            gameState = 'dead';
-            deathCause = 'Stenras!';
-            stateTimer = 0;
+            player.takeDamage(25);
+            if (player.isDead()) deathCause = 'Stenras!';
         }
 
+        // Föll för långt = instant death
         if (player.y > player.lastGroundY + 500 || player.y > level.groundY + 100) {
-            gameState = 'dead';
+            player.takeDamage(player.maxHealth);
             deathCause = 'Du föll!';
+        }
+
+        // Kolla om spelaren dog
+        if (player.isDead()) {
+            gameState = 'dead';
             stateTimer = 0;
         }
     } else if (gameState === 'dead') {
