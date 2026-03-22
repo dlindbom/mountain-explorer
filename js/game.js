@@ -36,6 +36,7 @@ let enemyWarningText = 'BJÖRN!';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
 let gotNewRecord = false;
+let deathCutscene = null;
 
 // Örn-system
 let eagles = [];
@@ -260,9 +261,27 @@ function gameLoop() {
 
         // Kolla om spelaren dog
         if (player.isDead()) {
-            gameState = 'dead';
+            gameState = 'cutscene';
             stateTimer = 0;
             gotNewRecord = economy.processRun(player.maxHeight);
+
+            // Bestäm cutscene-typ utifrån dödsorsak
+            let cutsceneType = 'fall';
+            if (deathCause.includes('Örn')) cutsceneType = 'eagle';
+            else if (deathCause.includes('Björn')) cutsceneType = 'bear';
+            else if (deathCause.includes('Yeti')) cutsceneType = 'yeti';
+            else if (deathCause.includes('Stenras')) cutsceneType = 'rock';
+            else if (deathCause.includes('Lava')) cutsceneType = 'lava';
+            deathCutscene = new DeathCutscene(cutsceneType, player.colors);
+        }
+    } else if (gameState === 'cutscene') {
+        // Spela cutscene, sedan gå till death screen
+        if (deathCutscene) {
+            deathCutscene.update();
+            if (deathCutscene.done) {
+                gameState = 'dead';
+                stateTimer = 0;
+            }
         }
     } else if (gameState === 'dead') {
         stateTimer++;
@@ -276,18 +295,24 @@ function gameLoop() {
     if (bearWarning > 0 && gameState === 'playing') bearWarning--;
 
     // Kamera
-    const targetCameraY = player.y - canvas.height * 0.45;
-    cameraY += (targetCameraY - cameraY) * 0.08;
+    if (gameState !== 'cutscene') {
+        const targetCameraY = player.y - canvas.height * 0.45;
+        cameraY += (targetCameraY - cameraY) * 0.08;
+    }
 
     // === RITA ===
-    drawBackground(ctx, canvas, cameraY);
-    drawLevel(ctx, level, cameraY, canvas.height);
-    rockfall.draw(ctx, cameraY);
-    for (const enemy of bears) enemy.draw(ctx, cameraY);
-    for (const eagle of eagles) eagle.draw(ctx, cameraY);
-    player.draw(ctx, cameraY);
-    rockfall.drawWarning(ctx, canvas);
-    drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
+    if (gameState === 'cutscene' && deathCutscene) {
+        deathCutscene.draw(ctx, canvas);
+    } else {
+        drawBackground(ctx, canvas, cameraY);
+        drawLevel(ctx, level, cameraY, canvas.height);
+        rockfall.draw(ctx, cameraY);
+        for (const enemy of bears) enemy.draw(ctx, cameraY);
+        for (const eagle of eagles) eagle.draw(ctx, cameraY);
+        player.draw(ctx, cameraY);
+        rockfall.drawWarning(ctx, canvas);
+        drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
+    }
     if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord);
 
     requestAnimationFrame(gameLoop);
