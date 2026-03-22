@@ -56,11 +56,24 @@ const CHARACTERS = {
         jumpForce: -13.65,    // Samma hopp som Alfred
         climbSpeed: 2.5,
         maxHealth: 110,
-        coinMultiplier: 2,    // Dubbla pengar
-        jacket: '#2E8B57',    // Grön jacka
+        coinMultiplier: 2,
+        cost: 100,
+        jacket: '#2E8B57',
         pants: '#1B5E20',
-        hat: '#3CB371',       // Ljusgrön mössa
-        backpack: '#228B22',  // Grön ryggsäck
+        hat: '#3CB371',
+        backpack: '#228B22',
+    },
+    bob: {
+        name: 'Bob',
+        desc: 'Hoppar 30m högre!',
+        speed: 4.5,
+        jumpForce: -17.3,     // ~30m (300px) extra hopphöjd
+        climbSpeed: 3,
+        cost: 350,
+        jacket: '#1E90FF',    // Dodgerblå jacka
+        pants: '#2F4F4F',
+        hat: '#FF6347',       // Tomatröd mössa
+        backpack: '#4682B4',  // Stålblå ryggsäck
     }
 };
 

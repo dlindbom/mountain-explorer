@@ -71,6 +71,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === '3') startGame('pappa');
     if (e.key === '4') startGame('jeff');
     if (e.key === '5') startGame('alvis');
+    if (e.key === '6') startGame('bob');
 });
 
 function handleCharacterClick(e) {

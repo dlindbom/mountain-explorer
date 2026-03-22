@@ -6,7 +6,7 @@ const SAVE_KEY = 'mountainExplorer_save';
 const economy = {
     coins: 0,
     bestHeight: 0,
-    unlockedCharacters: ['alfred', 'astrid', 'pappa', 'alvis'], // Gratis från start
+    unlockedCharacters: ['alfred', 'astrid', 'pappa'], // Gratis från start
 
     load() {
         try {
