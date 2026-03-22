@@ -124,26 +124,41 @@ function drawHealthBar(ctx, player) {
     ctx.textAlign = 'center'; // Återställ
 }
 
-function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player) {
+function drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord) {
     const alpha = Math.min(0.7, stateTimer / 60);
     ctx.fillStyle = `rgba(80,0,0,${alpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (stateTimer > 20) {
+        const cy = canvas.height / 2;
+
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(deathCause, canvas.width / 2, canvas.height / 2 - 20);
+        ctx.fillText(deathCause, canvas.width / 2, cy - 40);
+
         ctx.font = '18px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillText(`Höjd: ${player.maxHeight} m`, canvas.width / 2, canvas.height / 2 + 15);
+        ctx.fillText(`Höjd: ${player.maxHeight} m`, canvas.width / 2, cy - 10);
+
+        // Nytt rekord + pengar
+        if (gotNewRecord) {
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText('NYTT REKORD! +10 kr', canvas.width / 2, cy + 15);
+        }
+
+        ctx.fillStyle = '#FFD700';
+        ctx.font = '14px monospace';
+        ctx.fillText(`💰 ${economy.coins} kr`, canvas.width / 2, cy + 38);
+
         if (stateTimer > 60) {
-            ctx.font = '14px monospace';
+            ctx.font = '13px monospace';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
             if (isTouchDevice) {
-                ctx.fillText('Tryck för att försöka igen', canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Tryck för att försöka igen', canvas.width / 2, cy + 65);
             } else {
-                ctx.fillText('Mellanslag = försök igen', canvas.width / 2, canvas.height / 2 + 50);
-                ctx.fillText('Escape = byt karaktär', canvas.width / 2, canvas.height / 2 + 70);
+                ctx.fillText('Mellanslag = försök igen', canvas.width / 2, cy + 65);
+                ctx.fillText('Escape = byt karaktär', canvas.width / 2, cy + 83);
             }
         }
     }

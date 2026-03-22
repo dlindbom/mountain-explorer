@@ -35,6 +35,7 @@ let bearWarning = 0;
 let enemyWarningText = 'BJÖRN!';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
+let gotNewRecord = false;
 
 // Koppla input
 setupInput(canvas, () => gameState, () => stateTimer, restartGame);
@@ -205,6 +206,7 @@ function gameLoop() {
         if (player.isDead()) {
             gameState = 'dead';
             stateTimer = 0;
+            gotNewRecord = economy.processRun(player.maxHeight);
         }
     } else if (gameState === 'dead') {
         stateTimer++;
@@ -229,7 +231,7 @@ function gameLoop() {
     player.draw(ctx, cameraY);
     rockfall.drawWarning(ctx, canvas);
     drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
-    if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player);
+    if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord);
 
     requestAnimationFrame(gameLoop);
 }

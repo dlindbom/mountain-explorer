@@ -4,15 +4,14 @@
 const CHARACTERS = {
     alfred: {
         name: 'Alfred',
-        desc: 'Hoppar 50% högre',
+        desc: 'Hoppar 30% högre',
         speed: 4.5,
-        jumpForce: -15.75, // 50% högre (-10.5 * 1.5)
+        jumpForce: -13.65, // 30% högre (-10.5 * 1.3)
         climbSpeed: 3,
-        // Färger
-        jacket: '#3B7DD8',   // Blå jacka
+        jacket: '#3B7DD8',
         pants: '#3D5A40',
-        hat: '#E8A030',      // Orange mössa
-        backpack: '#5A3A8A', // Lila ryggsäck
+        hat: '#E8A030',
+        backpack: '#5A3A8A',
     },
     astrid: {
         name: 'Astrid',
@@ -36,7 +35,19 @@ const CHARACTERS = {
         jacket: '#5A5A5A',   // Grå jacka
         pants: '#3A3A3A',
         hat: '#8B0000',      // Mörkröd mössa
-        backpack: '#4A3520', // Brun ryggsäck
+        backpack: '#4A3520',
+    },
+    jeff: {
+        name: 'Jeff',
+        desc: 'Hoppar högt + springer snabbt',
+        speed: 6.75,          // Astrids fart
+        jumpForce: -13.65,    // Alfreds hopp
+        climbSpeed: 4,
+        cost: 300,            // Kostar 300 kr att låsa upp
+        jacket: '#FFD700',    // Guld jacka
+        pants: '#1A1A2E',
+        hat: '#FF4500',       // Eldröd mössa
+        backpack: '#FFD700',  // Guld ryggsäck
     }
 };
 
