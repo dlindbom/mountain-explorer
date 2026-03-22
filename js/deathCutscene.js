@@ -1,40 +1,104 @@
 // Döds-cutscenes: korta animationer beroende på dödsorsak
 
 class DeathCutscene {
-    constructor(cause, playerColors) {
+    constructor(cause, playerColors, deathInfo) {
         this.cause = cause;
         this.colors = playerColors;
         this.frame = 0;
-        this.done = false;
-        this.duration = this.getDuration();
+        this.canRestart = false;
+        this.animDuration = this.getAnimDuration();
+        // Info för slutskärmen
+        this.deathCause = deathInfo.deathCause || '';
+        this.maxHeight = deathInfo.maxHeight || 0;
+        this.gotNewRecord = deathInfo.gotNewRecord || false;
+        this.recordEarned = deathInfo.recordEarned || 0;
     }
 
-    getDuration() {
+    getAnimDuration() {
         switch (this.cause) {
-            case 'eagle': return 180;   // 3 sek
-            case 'bear': return 150;    // 2.5 sek
-            case 'yeti': return 120;    // 2 sek
-            case 'rock': return 90;     // 1.5 sek
-            case 'lava': return 120;    // 2 sek
+            case 'eagle': return 180;
+            case 'bear': return 150;
+            case 'yeti': return 120;
+            case 'rock': return 90;
+            case 'lava': return 120;
             default: return 90;
         }
     }
 
     update() {
         this.frame++;
-        if (this.frame >= this.duration) {
-            this.done = true;
+        // Kan starta om efter animationen + 1.5 sek
+        if (this.frame >= this.animDuration + 90) {
+            this.canRestart = true;
         }
     }
 
     draw(ctx, canvas) {
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
-        const t = this.frame / this.duration; // 0 → 1
 
         // Mörk bakgrund
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (this.frame <= this.animDuration) {
+            // Fas 1: animationen
+            this.drawAnimation(ctx, canvas);
+        } else {
+            // Fas 2: resultat + restart
+            this.drawResults(ctx, canvas);
+        }
+    }
+
+    drawResults(ctx, canvas) {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const fadeT = Math.min(1, (this.frame - this.animDuration) / 30);
+
+        ctx.globalAlpha = fadeT;
+
+        // Dödsorsak
+        ctx.fillStyle = '#FFF';
+        ctx.font = 'bold 32px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.deathCause, cx, cy - 50);
+
+        // Höjd
+        ctx.font = '18px monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.fillText(`Höjd: ${this.maxHeight} m`, cx, cy - 15);
+
+        // Nytt rekord
+        if (this.gotNewRecord) {
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText(`NYTT REKORD! +${this.recordEarned} kr`, cx, cy + 15);
+        }
+
+        // Pengar
+        ctx.fillStyle = '#FFD700';
+        ctx.font = '14px monospace';
+        ctx.fillText(`💰 ${economy.coins} kr`, cx, cy + 42);
+
+        // Restart-instruktioner
+        if (this.canRestart) {
+            ctx.font = '13px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            if (isTouchDevice) {
+                ctx.fillText('Tryck för att försöka igen', cx, cy + 75);
+            } else {
+                ctx.fillText('Mellanslag = försök igen', cx, cy + 75);
+                ctx.fillText('Escape = byt karaktär', cx, cy + 93);
+            }
+        }
+
+        ctx.globalAlpha = 1;
+    }
+
+    drawAnimation(ctx, canvas) {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const t = this.frame / this.animDuration;
 
         switch (this.cause) {
             case 'eagle': this.drawEagleCutscene(ctx, cx, cy, t); break;

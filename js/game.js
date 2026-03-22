@@ -28,7 +28,6 @@ let rockfall = new RockfallManager();
 let powerups = new PowerupManager();
 let cameraY = 0;
 let gameState = 'charselect'; // Börjar med karaktärsval
-let stateTimer = 0;
 let deathCause = '';
 let nextBearHeight = 100;
 let nextYetiHeight = 200;
@@ -36,8 +35,6 @@ let bearWarning = 0;
 let enemyWarningText = 'BJÖRN!';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
-let gotNewRecord = false;
-let recordEarned = 0;
 let deathCutscene = null;
 
 // Örn-system
@@ -48,7 +45,7 @@ let lastPlayerY = 0;
 const IDLE_THRESHOLD = 120; // 2 sekunder vid 60fps
 
 // Koppla input
-setupInput(canvas, () => gameState, () => stateTimer, restartGame);
+setupInput(canvas, () => gameState, () => deathCutscene && deathCutscene.canRestart, restartGame);
 
 // Karaktärsval via klick/touch
 canvas.addEventListener('click', handleCharacterClick);
@@ -315,35 +312,30 @@ function gameLoop() {
         // Kolla om spelaren dog
         if (player.isDead()) {
             gameState = 'cutscene';
-            stateTimer = 0;
             const earned = economy.processRun(player.maxHeight, player.coinMultiplier);
-            gotNewRecord = earned > 0;
-            recordEarned = earned;
 
-            // Bestäm cutscene-typ utifrån dödsorsak
+            // Bestäm cutscene-typ
             let cutsceneType = 'fall';
             if (deathCause.includes('Örn')) cutsceneType = 'eagle';
             else if (deathCause.includes('Björn')) cutsceneType = 'bear';
             else if (deathCause.includes('Yeti')) cutsceneType = 'yeti';
             else if (deathCause.includes('Stenras')) cutsceneType = 'rock';
             else if (deathCause.includes('Lava')) cutsceneType = 'lava';
-            deathCutscene = new DeathCutscene(cutsceneType, player.colors);
+
+            deathCutscene = new DeathCutscene(cutsceneType, player.colors, {
+                deathCause: deathCause,
+                maxHeight: player.maxHeight,
+                gotNewRecord: earned > 0,
+                recordEarned: earned
+            });
         }
     } else if (gameState === 'cutscene') {
-        // Spela cutscene, sedan gå till death screen
         if (deathCutscene) {
             deathCutscene.update();
-            if (deathCutscene.done) {
-                gameState = 'dead';
-                stateTimer = 0;
+            if (deathCutscene.canRestart) {
+                if (keys[' ']) restartGame();
+                if (keys['Escape']) goToCharacterSelect();
             }
-        }
-    } else if (gameState === 'dead') {
-        stateTimer++;
-        if (bearWarning > 0) bearWarning--;
-        if (stateTimer > 90) {
-            if (keys[' ']) restartGame();
-            if (keys['Escape']) goToCharacterSelect();
         }
     }
 
@@ -376,7 +368,7 @@ function gameLoop() {
         powerups.drawActiveEffect(ctx, canvas, player);
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
-    if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord, recordEarned);
+    // (dödsinfo visas nu inuti cutscenen)
 
     requestAnimationFrame(gameLoop);
 }

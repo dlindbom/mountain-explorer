@@ -53,7 +53,7 @@ function setupInput(canvas, getGameState, getStateTimer, restartFn) {
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         updateTouchButtons(e.touches, canvas);
-        if (getGameState() === 'dead' && getStateTimer() > 90) restartFn();
+        if (getGameState() === 'cutscene' && getStateTimer()) restartFn();
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
