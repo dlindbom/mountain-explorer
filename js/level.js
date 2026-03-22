@@ -14,7 +14,6 @@ class Level {
             x: 0, y: this.groundY, width: 800, height: 40, type: 'ground'
         });
 
-        // Generera första sektionerna
         this.generateUpTo(this.groundY - 900);
     }
 
@@ -27,18 +26,16 @@ class Level {
     addSection() {
         const side = this.sectionCount % 2 === 0 ? 'left' : 'right';
         const difficulty = Math.min(1, this.sectionCount / 40);
-        const ledgeCount = 2 + Math.floor(Math.random() * 2); // 2-3 avsatser
+        const ledgeCount = 2 + Math.floor(Math.random() * 2);
 
         for (let i = 0; i < ledgeCount; i++) {
-            // Första avsatsen i gruppen är alltid hoppbar
             const needsLadder = i > 0 && Math.random() < 0.3;
             const gap = needsLadder ?
-                135 + Math.random() * 25 :   // För högt att hoppa
-                55 + Math.random() * 30;      // Hoppbart
+                135 + Math.random() * 25 :
+                55 + Math.random() * 30;
 
             this.currentY -= gap;
 
-            // Klippavsats från bergväggen
             const width = 200 + Math.random() * 150;
             const x = side === 'left' ? 0 : 800 - width;
 
@@ -47,7 +44,6 @@ class Level {
                 type: 'ledge', fromWall: side
             };
 
-            // Spikar på vissa avsatser
             const spikeChance = 0.1 + difficulty * 0.25;
             if (this.totalPlatforms > 5 && Math.random() < spikeChance && width > 120) {
                 const spikeWidth = 20 + Math.random() * 20 + difficulty * 10;
@@ -58,29 +54,24 @@ class Level {
 
             this.platforms.push(ledge);
 
-            // Stege om hoppet är för stort
             if (needsLadder) {
                 const ladderX = side === 'left' ? x + width - 35 : x + 8;
                 this.ladders.push({
-                    x: ladderX,
-                    topY: this.currentY,
-                    bottomY: this.currentY + gap,
-                    width: 24,
-                    side: side
+                    x: ladderX, topY: this.currentY,
+                    bottomY: this.currentY + gap, width: 24, side: side
                 });
             }
 
             this.totalPlatforms++;
         }
 
-        // Bro ovanför klustret (för att korsa till andra sidan)
+        // Bro ovanför klustret
         this.currentY -= 60 + Math.random() * 25;
         const bridge = {
             x: 0, y: this.currentY, width: 800, height: 16, type: 'bridge'
         };
 
-        // Spikar på vissa broar
-        if (this.sectionCount > 2 && Math.random() < 0.15 + difficulty * 0.2 && true) {
+        if (this.sectionCount > 2 && Math.random() < 0.15 + difficulty * 0.2) {
             const spikeWidth = 25 + Math.random() * 20 + difficulty * 15;
             bridge.spikeStart = 200 + Math.random() * (400 - spikeWidth);
             bridge.spikeWidth = spikeWidth;
@@ -104,83 +95,181 @@ class Level {
     }
 
     draw(ctx, cameraY, canvasHeight) {
-        // Stegar (bakom plattformar)
+        // Pass 1: Klippmassa under varje avsats (bakom allt)
+        for (const p of this.platforms) {
+            const sy = p.y - cameraY;
+            if (sy < -200 || sy > canvasHeight + 50) continue;
+            if (p.type === 'ledge') {
+                this.drawRockBody(ctx, p, sy);
+            }
+            if (p.type === 'ground') {
+                this.drawGroundBody(ctx, p, sy);
+            }
+        }
+
+        // Stegar (bakom ytor)
         for (const ladder of this.ladders) {
             this.drawLadder(ctx, ladder, cameraY, canvasHeight);
         }
 
-        // Plattformar
+        // Pass 2: Ytor (ovanpå klippmassan)
         for (const p of this.platforms) {
             const sy = p.y - cameraY;
             if (sy < -50 || sy > canvasHeight + 50) continue;
 
             if (p.type === 'ground') {
-                this.drawGround(ctx, p, sy);
+                this.drawGroundSurface(ctx, p, sy);
             } else if (p.type === 'bridge') {
                 this.drawBridge(ctx, p, sy);
             } else {
-                this.drawLedge(ctx, p, sy);
+                this.drawLedgeSurface(ctx, p, sy);
             }
 
-            // Rita spikar på plattformen
             if (p.spikeStart !== undefined) {
                 this.drawSpikes(ctx, p, sy);
             }
         }
     }
 
-    drawGround(ctx, p, sy) {
-        ctx.fillStyle = '#555';
-        ctx.fillRect(p.x, sy, p.width, p.height);
-        ctx.fillStyle = '#5E5E5E';
-        ctx.fillRect(p.x, sy, p.width, 6);
-        ctx.fillStyle = '#4A4A4A';
-        for (let i = p.x + 15; i < p.x + p.width; i += 25) {
-            ctx.fillRect(i, sy + 10, 12, 6);
-        }
-    }
+    // === KLIPPMASSA (berget under avsatsen) ===
 
-    drawLedge(ctx, p, sy) {
-        // Klippans grundfärg
-        const shade = 95 + Math.sin(p.y * 0.05) * 10;
-        ctx.fillStyle = `rgb(${shade}, ${shade - 8}, ${shade - 15})`;
+    drawRockBody(ctx, p, sy) {
+        const depth = 140;
+        const shade = 58 + Math.sin(p.y * 0.04) * 6;
 
-        // Klippform med ojämn kant
+        // Bergmassa som sträcker sig neråt
+        ctx.fillStyle = `rgb(${shade}, ${shade - 4}, ${shade - 8})`;
         ctx.beginPath();
+
         if (p.fromWall === 'left') {
-            ctx.moveTo(p.x, sy - 3);
-            ctx.lineTo(p.x + p.width - 15, sy);
-            ctx.lineTo(p.x + p.width - 5, sy + 4);
-            ctx.lineTo(p.x + p.width, sy + 8);
-            ctx.lineTo(p.x + p.width - 8, sy + p.height + 2);
-            ctx.lineTo(p.x, sy + p.height + 4);
+            ctx.moveTo(0, sy);
+            ctx.lineTo(p.width, sy);
+            ctx.lineTo(p.width - 3, sy + 12);
+            ctx.lineTo(p.width - 12, sy + 45);
+            ctx.lineTo(p.width - 25, sy + 80);
+            ctx.lineTo(p.width - 40, sy + depth);
+            ctx.lineTo(0, sy + depth);
         } else {
-            ctx.moveTo(p.x + p.width, sy - 3);
-            ctx.lineTo(p.x + 15, sy);
-            ctx.lineTo(p.x + 5, sy + 4);
-            ctx.lineTo(p.x, sy + 8);
-            ctx.lineTo(p.x + 8, sy + p.height + 2);
-            ctx.lineTo(p.x + p.width, sy + p.height + 4);
+            ctx.moveTo(800, sy);
+            ctx.lineTo(p.x, sy);
+            ctx.lineTo(p.x + 3, sy + 12);
+            ctx.lineTo(p.x + 12, sy + 45);
+            ctx.lineTo(p.x + 25, sy + 80);
+            ctx.lineTo(p.x + 40, sy + depth);
+            ctx.lineTo(800, sy + depth);
         }
         ctx.fill();
 
-        // Ljus topp
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        const edgeStart = p.fromWall === 'left' ? p.x : p.x + 10;
-        const edgeWidth = p.width - 15;
-        ctx.fillRect(edgeStart, sy, edgeWidth, 2);
+        // Mörkare skuggning mot innerkanten
+        const innerGrad = p.fromWall === 'left' ?
+            ctx.createLinearGradient(p.width - 40, 0, p.width, 0) :
+            ctx.createLinearGradient(p.x + 40, 0, p.x, 0);
+        innerGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        innerGrad.addColorStop(1, 'rgba(0,0,0,0.25)');
+        ctx.fillStyle = innerGrad;
 
-        // Skugga under
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fillRect(edgeStart, sy + p.height - 2, edgeWidth, 3);
+        if (p.fromWall === 'left') {
+            ctx.fillRect(p.width - 40, sy, 40, depth);
+        } else {
+            ctx.fillRect(p.x, sy, 40, depth);
+        }
 
-        // Stensprickor
-        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        // Horisontella skikt-linjer (geologiska lager)
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.lineWidth = 1;
+        for (let ly = sy + 25; ly < sy + depth - 10; ly += 22) {
+            const wobble = Math.sin(ly * 0.08) * 4;
+            ctx.beginPath();
+            if (p.fromWall === 'left') {
+                ctx.moveTo(0, ly + wobble);
+                ctx.lineTo(p.width - 30, ly + wobble + 2);
+            } else {
+                ctx.moveTo(800, ly + wobble);
+                ctx.lineTo(p.x + 30, ly + wobble + 2);
+            }
+            ctx.stroke();
+        }
+
+        // Ljusare remsor (stenvariation)
+        ctx.fillStyle = `rgba(255,255,255,0.03)`;
+        for (let ly = sy + 15; ly < sy + depth - 20; ly += 35) {
+            if (p.fromWall === 'left') {
+                ctx.fillRect(5, ly, p.width - 50, 8);
+            } else {
+                ctx.fillRect(p.x + 45, ly, p.width - 50, 8);
+            }
+        }
+    }
+
+    drawGroundBody(ctx, p, sy) {
+        // Marken sträcker sig neråt
+        ctx.fillStyle = '#484040';
+        ctx.fillRect(0, sy + p.height, 800, 200);
+
+        // Stenlager
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.lineWidth = 1;
+        for (let ly = sy + p.height + 20; ly < sy + p.height + 180; ly += 25) {
+            ctx.beginPath();
+            ctx.moveTo(0, ly);
+            ctx.lineTo(800, ly + Math.sin(ly * 0.05) * 3);
+            ctx.stroke();
+        }
+    }
+
+    // === YTOR (det man går på) ===
+
+    drawLedgeSurface(ctx, p, sy) {
+        const shade = 82 + Math.sin(p.y * 0.04) * 8;
+
+        // Avsatsens ovansida (ljusare än klippmassan)
+        ctx.fillStyle = `rgb(${shade}, ${shade - 6}, ${shade - 12})`;
+
+        ctx.beginPath();
+        if (p.fromWall === 'left') {
+            ctx.moveTo(0, sy);
+            ctx.lineTo(p.width - 8, sy + 1);
+            ctx.lineTo(p.width, sy + 5);
+            ctx.lineTo(p.width - 2, sy + p.height);
+            ctx.lineTo(0, sy + p.height);
+        } else {
+            ctx.moveTo(800, sy);
+            ctx.lineTo(p.x + 8, sy + 1);
+            ctx.lineTo(p.x, sy + 5);
+            ctx.lineTo(p.x + 2, sy + p.height);
+            ctx.lineTo(800, sy + p.height);
+        }
+        ctx.fill();
+
+        // Ljus toppkant
+        ctx.fillStyle = `rgba(255,255,255,0.1)`;
+        const startX = p.fromWall === 'left' ? 0 : p.x + 10;
+        const edgeW = p.width - 12;
+        ctx.fillRect(startX, sy, edgeW, 2);
+
+        // Mörk underkant
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.fillRect(startX, sy + p.height - 2, edgeW, 2);
+
+        // Spricka i ytan
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(p.x + p.width * 0.3, sy + 3);
-        ctx.lineTo(p.x + p.width * 0.35, sy + p.height);
+        const crackX = p.x + p.width * 0.4;
+        ctx.moveTo(crackX, sy + 2);
+        ctx.lineTo(crackX + 3, sy + p.height);
         ctx.stroke();
+    }
+
+    drawGroundSurface(ctx, p, sy) {
+        ctx.fillStyle = '#5A5252';
+        ctx.fillRect(p.x, sy, p.width, p.height);
+        ctx.fillStyle = '#625A5A';
+        ctx.fillRect(p.x, sy, p.width, 6);
+        ctx.fillStyle = '#504848';
+        for (let i = p.x + 15; i < p.x + p.width; i += 25) {
+            ctx.fillRect(i, sy + 10, 12, 6);
+        }
     }
 
     drawBridge(ctx, p, sy) {
@@ -188,7 +277,7 @@ class Level {
         ctx.fillStyle = '#5A4010';
         ctx.fillRect(p.x, sy + p.height - 2, p.width, 5);
 
-        // Huvudkropp
+        // Kropp
         ctx.fillStyle = '#8B6914';
         ctx.fillRect(p.x, sy, p.width, p.height);
 
@@ -210,16 +299,18 @@ class Level {
         }
     }
 
+    // === SPIKAR ===
+
     drawSpikes(ctx, p, sy) {
         const spikeX = p.x + p.spikeStart;
         const spikeW = p.spikeWidth;
         const spikeH = 12;
 
         // Mörk bas
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(spikeX, sy - 2, spikeW, 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(spikeX, sy - 1, spikeW, 3);
 
-        // Spiktrianglar (pekar UPPÅT från ytan)
+        // Spiktrianglar uppåt
         const count = Math.max(2, Math.floor(spikeW / 11));
         const spacing = spikeW / count;
 
@@ -227,7 +318,6 @@ class Level {
             const x = spikeX + i * spacing + 1;
             const w = spacing - 2;
 
-            // Metallgrå spik
             ctx.fillStyle = '#707070';
             ctx.beginPath();
             ctx.moveTo(x, sy);
@@ -235,7 +325,6 @@ class Level {
             ctx.lineTo(x + w, sy);
             ctx.fill();
 
-            // Röd spets
             ctx.fillStyle = '#904040';
             ctx.beginPath();
             ctx.moveTo(x + w / 2 - 2, sy - spikeH + 4);
@@ -244,6 +333,8 @@ class Level {
             ctx.fill();
         }
     }
+
+    // === STEGAR ===
 
     drawLadder(ctx, ladder, cameraY, canvasHeight) {
         const topSy = ladder.topY - cameraY;
@@ -254,12 +345,10 @@ class Level {
         const lx = ladder.x;
         const lw = ladder.width;
 
-        // Rails
         ctx.fillStyle = '#A07828';
         ctx.fillRect(lx, topSy, 4, height);
         ctx.fillRect(lx + lw - 4, topSy, 4, height);
 
-        // Pinnar
         ctx.fillStyle = '#8B6914';
         for (let ry = topSy + 12; ry < bottomSy - 5; ry += 18) {
             ctx.fillRect(lx + 4, ry, lw - 8, 4);
@@ -268,7 +357,6 @@ class Level {
             ctx.fillStyle = '#8B6914';
         }
 
-        // Highlight
         ctx.fillStyle = 'rgba(255,255,255,0.08)';
         ctx.fillRect(lx + 1, topSy, 1, height);
     }
