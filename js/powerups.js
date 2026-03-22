@@ -31,7 +31,8 @@ class Powerup {
         const sy = this.y - cameraY + bob;
 
         // Glöd under föremålet
-        const glowColor = this.type === 'rocketboots' ? 'rgba(255, 100, 0, 0.2)' : 'rgba(0, 200, 0, 0.2)';
+        const glowColors = { rocketboots: 'rgba(255, 100, 0, 0.2)', medkit: 'rgba(0, 200, 0, 0.2)', bat: 'rgba(200, 150, 50, 0.2)' };
+        const glowColor = glowColors[this.type] || 'rgba(200, 200, 200, 0.2)';
         ctx.fillStyle = glowColor;
         ctx.beginPath();
         ctx.ellipse(sx + this.width / 2, sy + this.height + 2, 12, 4, 0, 0, Math.PI * 2);
@@ -39,6 +40,8 @@ class Powerup {
 
         if (this.type === 'rocketboots') {
             this.drawRocketBoots(ctx, sx, sy);
+        } else if (this.type === 'bat') {
+            this.drawBat(ctx, sx, sy);
         } else {
             this.drawMedkit(ctx, sx, sy);
         }
@@ -101,6 +104,31 @@ class Powerup {
         ctx.fillRect(sx + 6, sy + 1, 8, 3);
         ctx.fillStyle = '#777';
         ctx.fillRect(sx + 8, sy, 4, 2);
+    }
+
+    drawBat(ctx, sx, sy) {
+        // Slagträ (snett lutande)
+        ctx.save();
+        ctx.translate(sx + 10, sy + 10);
+        ctx.rotate(-0.5);
+
+        // Handtag
+        ctx.fillStyle = '#4A3520';
+        ctx.fillRect(-2, 2, 5, 14);
+
+        // Grepp-tejp
+        ctx.fillStyle = '#222';
+        ctx.fillRect(-2, 12, 5, 4);
+
+        // Slagyta
+        ctx.fillStyle = '#B8935A';
+        ctx.fillRect(-4, -8, 9, 12);
+
+        // Topp (rundad)
+        ctx.fillStyle = '#C8A36A';
+        ctx.fillRect(-3, -10, 7, 4);
+
+        ctx.restore();
     }
 }
 
@@ -199,7 +227,8 @@ class PowerupManager {
         if (!bestPlatform) return;
 
         // Slumpa typ
-        const type = Math.random() < 0.5 ? 'rocketboots' : 'medkit';
+        const roll = Math.random();
+        const type = roll < 0.33 ? 'rocketboots' : roll < 0.66 ? 'medkit' : 'bat';
         const px = bestPlatform.x + 30 + Math.random() * (bestPlatform.width - 60);
         const py = bestPlatform.y - 22;
 
@@ -208,15 +237,18 @@ class PowerupManager {
 
     activatePowerup(item, player) {
         if (item.type === 'rocketboots') {
-            // 5 sekunders flygning
-            this.activeEffect = new ActiveEffect('rocketboots', 300); // 5 sek vid 60fps
+            this.activeEffect = new ActiveEffect('rocketboots', 150); // 2.5 sek vid 60fps
+        } else if (item.type === 'bat') {
+            this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
+            player.hasBat = true;
         } else if (item.type === 'medkit') {
             // Återställ 50 HP
             player.health = Math.min(player.maxHealth, player.health + 50);
         }
 
         // Pickup-partiklar
-        const color = item.type === 'rocketboots' ? '#FF8800' : '#00CC00';
+        const pickupColors = { rocketboots: '#FF8800', medkit: '#00CC00', bat: '#C8A36A' };
+        const color = pickupColors[item.type] || '#FFF';
         for (let i = 0; i < 10; i++) {
             this.pickupParticles.push({
                 x: item.x + item.width / 2,
@@ -247,26 +279,31 @@ class PowerupManager {
         ctx.globalAlpha = 1;
     }
 
-    drawActiveEffect(ctx, canvas) {
-        if (!this.activeEffect) return;
-
-        const progress = this.activeEffect.getProgress();
-
-        if (this.activeEffect.type === 'rocketboots') {
-            // Raketindikator
+    drawActiveEffect(ctx, canvas, player) {
+        // Raketindikator
+        if (this.activeEffect && this.activeEffect.type === 'rocketboots') {
+            const progress = this.activeEffect.getProgress();
             ctx.fillStyle = 'rgba(255, 100, 0, 0.6)';
             roundRect(ctx, canvas.width / 2 - 75, canvas.height - 40, 150, 25, 6);
             ctx.fill();
-
-            // Progressbar
             ctx.fillStyle = '#FF6600';
             roundRect(ctx, canvas.width / 2 - 72, canvas.height - 37, 144 * progress, 19, 4);
             ctx.fill();
-
             ctx.fillStyle = '#FFF';
             ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('RAKETSTÖVLAR', canvas.width / 2, canvas.height - 23);
+        }
+
+        // Slagträ-indikator
+        if (player && player.hasBat) {
+            ctx.fillStyle = 'rgba(180, 140, 80, 0.6)';
+            roundRect(ctx, canvas.width - 115, 42, 100, 22, 5);
+            ctx.fill();
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('🏏 SLAGTRÄ', canvas.width - 65, 57);
         }
     }
 

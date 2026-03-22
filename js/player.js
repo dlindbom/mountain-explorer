@@ -83,6 +83,9 @@ class Player {
         this.maxHealth = char.maxHealth || 100;
         this.health = this.maxHealth;
 
+        // Powerups
+        this.hasBat = false;
+
         // Klättring
         this.climbing = false;
         this.currentLadder = null;
@@ -106,6 +109,7 @@ class Player {
         this.inLava = false;
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
+        this.hasBat = false;
         this.climbing = false;
         this.currentLadder = null;
     }

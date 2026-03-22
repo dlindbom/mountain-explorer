@@ -263,7 +263,13 @@ function gameLoop() {
         // Fiende-kollision (björnar/yetis)
         for (const enemy of bears) {
             if (enemy.collidesWith(player)) {
-                if (enemy instanceof Yeti) {
+                if (player.hasBat) {
+                    // Slagträ! Slå iväg fienden
+                    enemy.active = false;
+                    player.hasBat = false;
+                    bearWarning = 60;
+                    enemyWarningText = 'SMACK!';
+                } else if (enemy instanceof Yeti) {
                     player.takeDamage(player.maxHealth);
                     deathCause = 'Yetin krossade dig!';
                 } else {
@@ -273,12 +279,20 @@ function gameLoop() {
             }
         }
 
-        // Örn-kollision = 40 skada
+        // Örn-kollision
         for (const eagle of eagles) {
             if (eagle.collidesWith(player)) {
-                player.takeDamage(40);
-                eagle.active = false;
-                if (player.isDead()) deathCause = 'Örnen tog dig!';
+                if (player.hasBat) {
+                    // Slagträ! Slå iväg örnen
+                    eagle.active = false;
+                    player.hasBat = false;
+                    bearWarning = 60;
+                    enemyWarningText = 'SMACK!';
+                } else {
+                    player.takeDamage(40);
+                    eagle.active = false;
+                    if (player.isDead()) deathCause = 'Örnen tog dig!';
+                }
             }
         }
 
@@ -353,7 +367,7 @@ function gameLoop() {
 
         player.draw(ctx, cameraY);
         rockfall.drawWarning(ctx, canvas);
-        powerups.drawActiveEffect(ctx, canvas);
+        powerups.drawActiveEffect(ctx, canvas, player);
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
     if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player, gotNewRecord);
