@@ -85,7 +85,7 @@ canvas.addEventListener('touchend', (e) => {
 
 window.addEventListener('keydown', (e) => {
     if (gameState === 'charselect') {
-        const charKeys = { '1': 'alfred', '2': 'astrid', '3': 'pappa', '4': 'jeff', '5': 'alvis', '6': 'bob' };
+        const charKeys = { '1': 'alfred', '2': 'astrid', '3': 'pappa', '4': 'jeff', '5': 'alvis', '6': 'bob', '7': 'mamma', '8': 'alice' };
         if (charKeys[e.key]) {
             selectedCharacter = charKeys[e.key];
             gameState = 'levelselect';
@@ -294,7 +294,7 @@ function gameLoop() {
                 if (player.hasBat) {
                     // Slagträ! Slå iväg fienden
                     enemy.active = false;
-                    player.hasBat = false;
+                    if (!player.permanentBat) player.hasBat = false;
                     bearWarning = 60;
                     enemyWarningText = 'SMACK!';
                 } else if (enemy instanceof Yeti) {
@@ -313,7 +313,7 @@ function gameLoop() {
                 if (player.hasBat) {
                     // Slagträ! Slå iväg örnen
                     eagle.active = false;
-                    player.hasBat = false;
+                    if (!player.permanentBat) player.hasBat = false;
                     bearWarning = 60;
                     enemyWarningText = 'SMACK!';
                 } else {

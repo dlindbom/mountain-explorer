@@ -1,6 +1,6 @@
 // Karaktärsval-skärm med ekonomi
 
-const ALL_CHARACTER_IDS = ['alfred', 'astrid', 'pappa', 'jeff', 'alvis', 'bob'];
+const ALL_CHARACTER_IDS = ['alfred', 'astrid', 'pappa', 'jeff', 'alvis', 'bob', 'mamma', 'alice'];
 
 function drawCharacterSelect(ctx, canvas) {
     // Bakgrund
@@ -42,7 +42,7 @@ function drawCharacterSelect(ctx, canvas) {
 
     // Kort
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : 122;
+    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : count <= 6 ? 122 : count <= 8 ? 92 : 80;
     const cardH = 360;
     const cardY = 118;
     const gap = 12;
@@ -204,7 +204,7 @@ function drawCharacterPreview(ctx, x, y, char, s, id) {
 // Kolla om ett klick/touch träffar ett kort (eller köp-knapp)
 function getSelectedCharacter(canvasX, canvasY) {
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : 122;
+    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : count <= 6 ? 122 : count <= 8 ? 92 : 80;
     const cardH = 360;
     const cardY = 118;
     const gap = 12;

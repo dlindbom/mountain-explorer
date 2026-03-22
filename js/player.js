@@ -51,12 +51,13 @@ const CHARACTERS = {
     },
     alvis: {
         name: 'Alvis',
-        desc: 'Dubbla pengar!',
-        speed: 3.5,           // Långsammare
-        jumpForce: -13.65,    // Samma hopp som Alfred
+        desc: 'Dubbla pengar, pytteliten!',
+        speed: 3.15,          // 10% långsammare
+        jumpForce: -12.29,    // 10% lägre hopp
         climbSpeed: 2.5,
         maxHealth: 110,
         coinMultiplier: 2,
+        scale: 0.5,           // Hälften så stor
         cost: 100,
         jacket: '#2E8B57',
         pants: '#1B5E20',
@@ -67,13 +68,37 @@ const CHARACTERS = {
         name: 'Bob',
         desc: 'Hoppar 30m högre!',
         speed: 4.5,
-        jumpForce: -17.3,     // ~30m (300px) extra hopphöjd
+        jumpForce: -17.3,
         climbSpeed: 3,
         cost: 350,
-        jacket: '#1E90FF',    // Dodgerblå jacka
+        jacket: '#1E90FF',
         pants: '#2F4F4F',
-        hat: '#FF6347',       // Tomatröd mössa
-        backpack: '#4682B4',  // Stålblå ryggsäck
+        hat: '#FF6347',
+        backpack: '#4682B4',
+    },
+    mamma: {
+        name: 'Mamma',
+        desc: 'Gips+krycka, permanent slagträ',
+        speed: 3.0,
+        jumpForce: -9.0,
+        climbSpeed: 2,
+        permanentBat: true,
+        jacket: '#9370DB',
+        pants: '#483D8B',
+        hat: '#DDA0DD',
+        backpack: '#8B668B',
+    },
+    alice: {
+        name: 'Alice',
+        desc: 'Volthopp, 50% längre!',
+        speed: 4.5,
+        jumpForce: -11.55,    // 10% högre
+        climbSpeed: 3,
+        jumpSpeedBoost: 1.5,  // 50% längre hopp sidled
+        jacket: '#FF69B4',
+        pants: '#8B0A50',
+        hat: '#FFB6C1',
+        backpack: '#FF1493',
     }
 };
 
@@ -93,6 +118,8 @@ class Player {
         this.colors = char;
         this.scale = char.scale || 1;
         this.coinMultiplier = char.coinMultiplier || 1;
+        this.permanentBat = char.permanentBat || false;
+        this.jumpSpeedBoost = char.jumpSpeedBoost || 1;
 
         this.width = Math.round(24 * this.scale);
         this.height = Math.round(32 * this.scale);
@@ -111,7 +138,7 @@ class Player {
         this.health = this.maxHealth;
 
         // Powerups
-        this.hasBat = false;
+        this.hasBat = this.permanentBat;
 
         // Klättring
         this.climbing = false;
@@ -136,7 +163,7 @@ class Player {
         this.inLava = false;
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
-        this.hasBat = false;
+        this.hasBat = this.permanentBat;
         this.climbing = false;
         this.currentLadder = null;
     }
@@ -249,13 +276,22 @@ class Player {
         if ((keys[' '] || keys['ArrowUp'] || keys['w']) && this.onGround) {
             this.vy = this.jumpForce;
             this.onGround = false;
+            // Alice-boost: 50% mer fart sidled vid hopp
+            if (this.jumpSpeedBoost > 1 && this.vx !== 0) {
+                this.vx *= this.jumpSpeedBoost;
+            }
         }
 
         // Gravitation
         this.vy += this.gravity;
 
-        // Flytta
-        this.x += this.vx;
+        // Flytta (i luften med boost, på marken med normal fart)
+        if (this.onGround || this.jumpSpeedBoost <= 1) {
+            this.x += this.vx;
+        } else {
+            // I luften: behåll boostad fart
+            this.x += this.vx;
+        }
         this.y += this.vy;
 
         // Horisontel gräns
@@ -314,10 +350,19 @@ class Player {
         const sx = this.x;
         const sy = this.y - cameraY;
 
-        // Skala allt ritande
         ctx.save();
         ctx.translate(sx, sy);
         ctx.scale(this.scale, this.scale);
+
+        // Alice volt-rotation i luften
+        if (this.characterId === 'alice' && !this.onGround && !this.climbing && this.vy !== 0) {
+            this.flipAngle = (this.flipAngle || 0) + 0.15;
+            ctx.translate(12, 16);
+            ctx.rotate(this.flipAngle);
+            ctx.translate(-12, -16);
+        } else {
+            this.flipAngle = 0;
+        }
 
         if (this.climbing) {
             this.drawClimbing(ctx);
@@ -419,6 +464,29 @@ class Player {
             ctx.fillRect(7 + eyeX, 11, 10, 4);
             ctx.fillRect(6 + eyeX, 12, 2, 2);
             ctx.fillRect(18 + eyeX, 12, 2, 2);
+        }
+
+        // Mamma: gips på höger ben + krycka
+        if (this.characterId === 'mamma') {
+            // Gips (vitt bandage på höger ben)
+            ctx.fillStyle = '#F0F0F0';
+            ctx.fillRect(13, 24, 8, 9);
+            // Gips-linjer
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(13, 27); ctx.lineTo(21, 27);
+            ctx.moveTo(13, 30); ctx.lineTo(21, 30);
+            ctx.stroke();
+            // Krycka (under armen, på den sida man tittar)
+            const crX = this.facing === 1 ? 22 : -4;
+            ctx.fillStyle = '#AAA';
+            ctx.fillRect(crX, 8, 3, 26);
+            // Krycka-topp (T-form)
+            ctx.fillRect(crX - 2, 7, 7, 3);
+            // Krycka-botten
+            ctx.fillStyle = '#888';
+            ctx.fillRect(crX, 33, 3, 2);
         }
 
         // Mun
