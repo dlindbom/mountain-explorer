@@ -31,7 +31,7 @@ class Powerup {
         const sy = this.y - cameraY + bob;
 
         // Glöd under föremålet
-        const glowColors = { rocketboots: 'rgba(255, 100, 0, 0.2)', medkit: 'rgba(0, 200, 0, 0.2)', bat: 'rgba(200, 150, 50, 0.2)' };
+        const glowColors = { rocketboots: 'rgba(255, 100, 0, 0.2)', medkit: 'rgba(0, 200, 0, 0.2)', bat: 'rgba(200, 150, 50, 0.2)', gold: 'rgba(255, 215, 0, 0.3)' };
         const glowColor = glowColors[this.type] || 'rgba(200, 200, 200, 0.2)';
         ctx.fillStyle = glowColor;
         ctx.beginPath();
@@ -42,6 +42,8 @@ class Powerup {
             this.drawRocketBoots(ctx, sx, sy);
         } else if (this.type === 'bat') {
             this.drawBat(ctx, sx, sy);
+        } else if (this.type === 'gold') {
+            this.drawGold(ctx, sx, sy);
         } else {
             this.drawMedkit(ctx, sx, sy);
         }
@@ -129,6 +131,45 @@ class Powerup {
         ctx.fillRect(-3, -10, 7, 4);
 
         ctx.restore();
+    }
+
+    drawGold(ctx, sx, sy) {
+        // Guldmynt i en hög
+        // Botten-mynt
+        ctx.fillStyle = '#DAA520';
+        ctx.beginPath();
+        ctx.ellipse(sx + 6, sy + 16, 6, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 14, sy + 16, 6, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mellanmynt
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.ellipse(sx + 10, sy + 12, 6, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 5, sy + 12, 5, 3, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Toppmynt (glansigt)
+        ctx.fillStyle = '#FFE44D';
+        ctx.beginPath();
+        ctx.ellipse(sx + 10, sy + 8, 6, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glans
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx + 9, sy + 7, 3, 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // "kr" text
+        ctx.fillStyle = '#B8860B';
+        ctx.font = 'bold 7px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('kr', sx + 10, sy + 10);
     }
 }
 
@@ -228,7 +269,7 @@ class PowerupManager {
 
         // Slumpa typ
         const roll = Math.random();
-        const type = roll < 0.33 ? 'rocketboots' : roll < 0.66 ? 'medkit' : 'bat';
+        const type = roll < 0.25 ? 'rocketboots' : roll < 0.5 ? 'medkit' : roll < 0.75 ? 'bat' : 'gold';
         const px = bestPlatform.x + 30 + Math.random() * (bestPlatform.width - 60);
         const py = bestPlatform.y - 22;
 
@@ -241,13 +282,17 @@ class PowerupManager {
         } else if (item.type === 'bat') {
             this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
             player.hasBat = true;
+        } else if (item.type === 'gold') {
+            // +10 kronor
+            economy.coins += 10;
+            economy.save();
         } else if (item.type === 'medkit') {
             // Återställ 50 HP
             player.health = Math.min(player.maxHealth, player.health + 50);
         }
 
         // Pickup-partiklar
-        const pickupColors = { rocketboots: '#FF8800', medkit: '#00CC00', bat: '#C8A36A' };
+        const pickupColors = { rocketboots: '#FF8800', medkit: '#00CC00', bat: '#C8A36A', gold: '#FFD700' };
         const color = pickupColors[item.type] || '#FFF';
         for (let i = 0; i < 10; i++) {
             this.pickupParticles.push({
