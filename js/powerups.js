@@ -31,7 +31,7 @@ class Powerup {
         const sy = this.y - cameraY + bob;
 
         // Glöd under föremålet
-        const glowColors = { rocketboots: 'rgba(255, 100, 0, 0.2)', medkit: 'rgba(0, 200, 0, 0.2)', bat: 'rgba(200, 150, 50, 0.2)', gold: 'rgba(255, 215, 0, 0.3)' };
+        const glowColors = { rocketboots: 'rgba(255, 100, 0, 0.2)', medkit: 'rgba(0, 200, 0, 0.2)', bat: 'rgba(200, 150, 50, 0.2)', gold: 'rgba(255, 215, 0, 0.3)', waterbucket: 'rgba(50, 150, 255, 0.25)', warmjacket: 'rgba(200, 100, 50, 0.25)' };
         const glowColor = glowColors[this.type] || 'rgba(200, 200, 200, 0.2)';
         ctx.fillStyle = glowColor;
         ctx.beginPath();
@@ -44,6 +44,10 @@ class Powerup {
             this.drawBat(ctx, sx, sy);
         } else if (this.type === 'gold') {
             this.drawGold(ctx, sx, sy);
+        } else if (this.type === 'waterbucket') {
+            this.drawWaterBucket(ctx, sx, sy);
+        } else if (this.type === 'warmjacket') {
+            this.drawWarmJacket(ctx, sx, sy);
         } else {
             this.drawMedkit(ctx, sx, sy);
         }
@@ -171,6 +175,60 @@ class Powerup {
         ctx.textAlign = 'center';
         ctx.fillText('kr', sx + 10, sy + 10);
     }
+
+    drawWaterBucket(ctx, sx, sy) {
+        // Hink
+        ctx.fillStyle = '#6A6A6A';
+        ctx.beginPath();
+        ctx.moveTo(sx + 2, sy + 4);
+        ctx.lineTo(sx + 18, sy + 4);
+        ctx.lineTo(sx + 16, sy + 18);
+        ctx.lineTo(sx + 4, sy + 18);
+        ctx.fill();
+        // Vatten
+        ctx.fillStyle = '#4488DD';
+        ctx.fillRect(sx + 4, sy + 6, 12, 10);
+        // Vattenyta (ljusare)
+        ctx.fillStyle = '#66AAEE';
+        ctx.fillRect(sx + 4, sy + 6, 12, 3);
+        // Glans
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(sx + 6, sy + 7, 4, 1);
+        // Handtag
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sx + 10, sy + 2, 6, Math.PI, 0);
+        ctx.stroke();
+        // Droppar
+        const dropY = Math.sin(this.bobFrame * 2) * 2;
+        ctx.fillStyle = '#4488DD';
+        ctx.fillRect(sx + 8, sy + 18 + dropY, 2, 3);
+    }
+
+    drawWarmJacket(ctx, sx, sy) {
+        // Jacka (puffer-stil)
+        ctx.fillStyle = '#CC4400';
+        // Kropp
+        ctx.fillRect(sx + 3, sy + 5, 14, 13);
+        // Ärmar
+        ctx.fillRect(sx, sy + 6, 5, 10);
+        ctx.fillRect(sx + 15, sy + 6, 5, 10);
+        // Päls-krage
+        ctx.fillStyle = '#F5E6D0';
+        ctx.fillRect(sx + 3, sy + 3, 14, 4);
+        ctx.fillRect(sx + 5, sy + 1, 10, 3);
+        // Dragkedja
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(sx + 9, sy + 7, 2, 10);
+        // Knapp
+        ctx.fillRect(sx + 8, sy + 9, 4, 2);
+        // Snöflinga ovanpå
+        ctx.fillStyle = '#FFF';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('❄', sx + 10, sy + 1);
+    }
 }
 
 // Hanterar aktiv powerup-effekt på spelaren
@@ -268,8 +326,8 @@ class PowerupManager {
         if (!bestPlatform) return;
 
         // Slumpa typ
-        const roll = Math.random();
-        const type = roll < 0.25 ? 'rocketboots' : roll < 0.5 ? 'medkit' : roll < 0.75 ? 'bat' : 'gold';
+        const types = ['rocketboots', 'medkit', 'bat', 'gold', 'waterbucket', 'warmjacket'];
+        const type = types[Math.floor(Math.random() * types.length)];
         const px = bestPlatform.x + 30 + Math.random() * (bestPlatform.width - 60);
         const py = bestPlatform.y - 22;
 
@@ -283,16 +341,19 @@ class PowerupManager {
             this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
             player.hasBat = true;
         } else if (item.type === 'gold') {
-            // +10 kronor (multiplicerat)
             economy.coins += 10 * (player.coinMultiplier || 1);
             economy.save();
+        } else if (item.type === 'waterbucket') {
+            player.hasWaterBucket = true;
+        } else if (item.type === 'warmjacket') {
+            player.hasWarmJacket = true;
         } else if (item.type === 'medkit') {
             // Återställ 50 HP
             player.health = Math.min(player.maxHealth, player.health + 50);
         }
 
         // Pickup-partiklar
-        const pickupColors = { rocketboots: '#FF8800', medkit: '#00CC00', bat: '#C8A36A', gold: '#FFD700' };
+        const pickupColors = { rocketboots: '#FF8800', medkit: '#00CC00', bat: '#C8A36A', gold: '#FFD700', waterbucket: '#4488DD', warmjacket: '#CC4400' };
         const color = pickupColors[item.type] || '#FFF';
         for (let i = 0; i < 10; i++) {
             this.pickupParticles.push({
@@ -340,15 +401,22 @@ class PowerupManager {
             ctx.fillText('RAKETSTÖVLAR', canvas.width / 2, canvas.height - 23);
         }
 
-        // Slagträ-indikator
-        if (player && player.hasBat) {
-            ctx.fillStyle = 'rgba(180, 140, 80, 0.6)';
-            roundRect(ctx, canvas.width - 115, 42, 100, 22, 5);
-            ctx.fill();
-            ctx.fillStyle = '#FFF';
-            ctx.font = 'bold 10px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('🏏 SLAGTRÄ', canvas.width - 65, 57);
+        // Itemindiatorer (höger sida, under pengar)
+        if (player) {
+            let iy = 42;
+            const drawIndicator = (label, color) => {
+                ctx.fillStyle = color;
+                roundRect(ctx, canvas.width - 115, iy, 100, 18, 5);
+                ctx.fill();
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, canvas.width - 65, iy + 13);
+                iy += 22;
+            };
+            if (player.hasBat) drawIndicator('🏏 SLAGTRÄ', 'rgba(180, 140, 80, 0.6)');
+            if (player.hasWaterBucket) drawIndicator('🪣 VATTEN', 'rgba(50, 120, 200, 0.6)');
+            if (player.hasWarmJacket) drawIndicator('🧥 JACKA', 'rgba(200, 80, 30, 0.6)');
         }
     }
 

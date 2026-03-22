@@ -139,6 +139,9 @@ class Player {
 
         // Powerups
         this.hasBat = this.permanentBat;
+        this.hasWaterBucket = false;
+        this.hasWarmJacket = false;
+        this.blizzardSlow = false; // Sätts av snöstorm
 
         // Klättring
         this.climbing = false;
@@ -164,6 +167,9 @@ class Player {
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
         this.hasBat = this.permanentBat;
+        this.hasWaterBucket = false;
+        this.hasWarmJacket = false;
+        this.blizzardSlow = false;
         this.climbing = false;
         this.currentLadder = null;
     }
@@ -242,12 +248,13 @@ class Player {
     }
 
     updateNormal(keys, platforms, ladders) {
-        // Rörelse vänster/höger
+        // Rörelse vänster/höger (30% långsammare i snöstorm)
+        const currentSpeed = this.blizzardSlow ? this.speed * 0.7 : this.speed;
         if (keys['ArrowLeft'] || keys['a']) {
-            this.vx = -this.speed;
+            this.vx = -currentSpeed;
             this.facing = -1;
         } else if (keys['ArrowRight'] || keys['d']) {
-            this.vx = this.speed;
+            this.vx = currentSpeed;
             this.facing = 1;
         } else {
             this.vx = 0;

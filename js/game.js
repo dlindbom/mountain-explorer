@@ -26,6 +26,7 @@ let player = null;
 let bears = [];
 let rockfall = new RockfallManager();
 let powerups = new PowerupManager();
+let blizzardMgr = new BlizzardManager();
 let cameraY = 0;
 let gameState = 'charselect'; // charselect → levelselect → playing → cutscene
 let levelCompleted = false;
@@ -104,6 +105,7 @@ function startGame(characterId) {
     eagles = [];
     rockfall.reset();
     powerups.reset();
+    blizzardMgr.reset();
     nextBearHeight = 100;
     nextYetiHeight = 200;
     bearWarning = 0;
@@ -273,6 +275,7 @@ function gameLoop() {
         updateEagles();
         rockfall.update(player.y, player.getHeight(), level.groundY);
         powerups.update(player, level);
+        blizzardMgr.update(player);
 
         // Kolla om spelaren nått bergets topp
         if (!levelCompleted && player.getHeight() >= levelProgress.getTargetHeight()) {
@@ -282,10 +285,14 @@ function gameLoop() {
             enemyWarningText = 'TOPPEN!';
         }
 
-        // Lava = 40 skada
+        // Lava = 40 skada (vattenhink skyddar)
         if (player.inLava) {
-            player.takeDamage(40);
-            if (player.isDead()) deathCause = 'Lava!';
+            if (player.hasWaterBucket) {
+                player.hasWaterBucket = false; // Förbruka hinken
+            } else {
+                player.takeDamage(40);
+                if (player.isDead()) deathCause = 'Lava!';
+            }
         }
 
         // Fiende-kollision (björnar/yetis)
@@ -391,7 +398,9 @@ function gameLoop() {
         }
 
         player.draw(ctx, cameraY);
+        blizzardMgr.draw(ctx, cameraY);
         rockfall.drawWarning(ctx, canvas);
+        blizzardMgr.drawWarning(ctx, canvas, player);
         powerups.drawActiveEffect(ctx, canvas, player);
         drawLevelHUD(ctx, canvas, player.getHeight());
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
