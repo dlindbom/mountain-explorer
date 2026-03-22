@@ -11,7 +11,6 @@ canvas.height = 600;
 function resizeCanvas() {
     const ratio = canvas.width / canvas.height;
     const windowRatio = window.innerWidth / window.innerHeight;
-
     if (windowRatio < ratio) {
         canvas.style.width = window.innerWidth + 'px';
         canvas.style.height = (window.innerWidth / ratio) + 'px';
@@ -32,22 +31,18 @@ const keys = {};
 let gameState = 'playing';
 let stateTimer = 0;
 let deathCause = '';
-
-// Björn-spawning
-let nextBearHeight = 100; // Första björnen vid 100m
+let nextBearHeight = 100;
 let bearWarning = 0;
 
-// Touch-detektering
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
-// Touch-knappar (↑ = ArrowUp för att kunna klättra)
 const touchButtons = {
     left:  { x: 20,  y: 480, w: 80, h: 80, key: 'ArrowLeft',  label: '←', pressed: false },
     right: { x: 120, y: 480, w: 80, h: 80, key: 'ArrowRight', label: '→', pressed: false },
     jump:  { x: 680, y: 480, w: 100, h: 100, key: 'ArrowUp',  label: '↑', pressed: false },
 };
 
-// Tangentbord
+// Input
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
@@ -56,7 +51,6 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-// Touch-hantering
 function touchToCanvas(touch) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -72,9 +66,8 @@ function hitButton(pos, btn) {
 
 function updateTouchButtons(touches) {
     for (const name in touchButtons) {
-        const btn = touchButtons[name];
-        btn.pressed = false;
-        keys[btn.key] = false;
+        touchButtons[name].pressed = false;
+        keys[touchButtons[name].key] = false;
     }
     for (let i = 0; i < touches.length; i++) {
         const pos = touchToCanvas(touches[i]);
@@ -93,23 +86,10 @@ canvas.addEventListener('touchstart', (e) => {
     updateTouchButtons(e.touches);
     if (gameState === 'dead' && stateTimer > 90) restartGame();
 }, { passive: false });
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateTouchButtons(e.touches); }, { passive: false });
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); updateTouchButtons(e.touches); }, { passive: false });
+canvas.addEventListener('touchcancel', (e) => { e.preventDefault(); updateTouchButtons(e.touches); }, { passive: false });
 
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    updateTouchButtons(e.touches);
-}, { passive: false });
-
-canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    updateTouchButtons(e.touches);
-}, { passive: false });
-
-canvas.addEventListener('touchcancel', (e) => {
-    e.preventDefault();
-    updateTouchButtons(e.touches);
-}, { passive: false });
-
-// Starta om
 function restartGame() {
     const savedMax = player.maxHeight;
     level = new Level();
@@ -123,117 +103,157 @@ function restartGame() {
     stateTimer = 0;
 }
 
-// Bergvägg-textur (förrenderad)
-const wallCanvas = document.createElement('canvas');
-wallCanvas.width = 800;
-wallCanvas.height = 200;
-const wallCtx = wallCanvas.getContext('2d');
+// === BERGS-BAKGRUND ===
 
-(function generateWallTexture() {
-    wallCtx.fillStyle = '#484848';
-    wallCtx.fillRect(0, 0, 800, 200);
-
-    for (let row = 0; row < 8; row++) {
-        const rowOffset = (row % 2) * 40;
-        for (let col = -1; col < 11; col++) {
-            const bx = col * 80 + rowOffset;
-            const by = row * 25;
-            const bw = 74 + Math.random() * 6;
-            const bh = 22 + Math.random() * 3;
-            const shade = 55 + Math.random() * 25;
-            wallCtx.fillStyle = `rgb(${shade}, ${shade - 3}, ${shade - 5})`;
-            wallCtx.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
-
-            wallCtx.fillStyle = 'rgba(255,255,255,0.04)';
-            wallCtx.fillRect(bx + 2, by + 1, bw - 4, 1);
-            wallCtx.fillStyle = 'rgba(0,0,0,0.08)';
-            wallCtx.fillRect(bx + 2, by + bh - 2, bw - 4, 1);
-        }
-    }
-
-    wallCtx.strokeStyle = 'rgba(0,0,0,0.15)';
-    wallCtx.lineWidth = 1;
-    for (let i = 0; i < 10; i++) {
-        wallCtx.beginPath();
-        const sx = Math.random() * 800;
-        const sy = Math.random() * 200;
-        wallCtx.moveTo(sx, sy);
-        wallCtx.lineTo(sx + (Math.random() - 0.5) * 30, sy + 10 + Math.random() * 25);
-        wallCtx.stroke();
-    }
-})();
-
-// Rita bakgrund
 function drawBackground() {
-    const offsetY = (-cameraY * 0.8) % 200;
-    for (let y = -200 + offsetY; y < canvas.height + 200; y += 200) {
-        ctx.drawImage(wallCanvas, 0, y);
+    // Himmel
+    const altitude = Math.max(0, -cameraY);
+    const progress = Math.min(1, altitude / 6000);
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    if (progress > 0.7) {
+        skyGrad.addColorStop(0, '#0F1B33');
+        skyGrad.addColorStop(1, '#1B3A5C');
+    } else if (progress > 0.4) {
+        skyGrad.addColorStop(0, '#2E5090');
+        skyGrad.addColorStop(1, '#6B9AC4');
+    } else {
+        skyGrad.addColorStop(0, '#5BA3D9');
+        skyGrad.addColorStop(1, '#A8D8EA');
     }
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Mörka kanter
-    const leftGrad = ctx.createLinearGradient(0, 0, 50, 0);
-    leftGrad.addColorStop(0, 'rgba(0,0,0,0.35)');
-    leftGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = leftGrad;
-    ctx.fillRect(0, 0, 50, canvas.height);
-
-    const rightGrad = ctx.createLinearGradient(800, 0, 750, 0);
-    rightGrad.addColorStop(0, 'rgba(0,0,0,0.35)');
-    rightGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = rightGrad;
-    ctx.fillRect(750, 0, 50, canvas.height);
-}
-
-// Spike-kollision
-function checkSpikeCollision() {
-    if (player.climbing) return;
-
-    for (const spike of level.spikes) {
-        if (player.x + player.width > spike.x + 3 &&
-            player.x < spike.x + spike.width - 3 &&
-            player.y + player.height > spike.y + 5) {
-            player.hitSpikes = true;
-            return;
+    // Stjärnor på hög höjd
+    if (progress > 0.6) {
+        const a = (progress - 0.6) / 0.4 * 0.8;
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        for (let i = 0; i < 25; i++) {
+            ctx.fillRect((i * 137 + 50) % 780 + 10, (i * 97 + 30) % 580 + 10, (i % 3) + 1, (i % 3) + 1);
         }
     }
+
+    // Avlägsna berg (parallax)
+    ctx.fillStyle = 'rgba(80, 95, 110, 0.3)';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    ctx.lineTo(80, 250 - cameraY * 0.02);
+    ctx.lineTo(200, 350 - cameraY * 0.02);
+    ctx.lineTo(350, 150 - cameraY * 0.02);
+    ctx.lineTo(500, 300 - cameraY * 0.02);
+    ctx.lineTo(700, 120 - cameraY * 0.02);
+    ctx.lineTo(800, 220 - cameraY * 0.02);
+    ctx.lineTo(800, canvas.height);
+    ctx.fill();
+
+    // Vänster bergsida (klippvägg)
+    drawCliffFace('left');
+
+    // Höger bergsida (klippvägg)
+    drawCliffFace('right');
 }
 
-// Björn-spawning
+function drawCliffFace(side) {
+    const isLeft = side === 'left';
+
+    ctx.fillStyle = isLeft ? '#3D3832' : '#3A3530';
+    ctx.beginPath();
+
+    if (isLeft) {
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, canvas.height);
+        // Ojämn innerkant
+        for (let y = canvas.height; y >= -10; y -= 20) {
+            const worldY = y + cameraY;
+            const x = 100 + Math.sin(worldY * 0.007) * 35 + Math.sin(worldY * 0.023) * 12;
+            ctx.lineTo(x, y);
+        }
+    } else {
+        ctx.moveTo(800, 0);
+        ctx.lineTo(800, canvas.height);
+        for (let y = canvas.height; y >= -10; y -= 20) {
+            const worldY = y + cameraY;
+            const x = 700 - Math.sin(worldY * 0.007 + 2) * 35 - Math.sin(worldY * 0.023 + 1) * 12;
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.fill();
+
+    // Stentextur (subtila linjer)
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let y = 0; y < canvas.height; y += 30) {
+        const worldY = y + cameraY;
+        const offset = Math.sin(worldY * 0.01) * 10;
+        ctx.beginPath();
+        if (isLeft) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(60 + offset, y);
+        } else {
+            ctx.moveTo(800, y);
+            ctx.lineTo(740 + offset, y);
+        }
+        ctx.stroke();
+    }
+
+    // Mörk kant mot klyftan
+    const edgeGrad = isLeft ?
+        ctx.createLinearGradient(80, 0, 140, 0) :
+        ctx.createLinearGradient(720, 0, 660, 0);
+    edgeGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+    edgeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = edgeGrad;
+    if (isLeft) {
+        ctx.fillRect(80, 0, 60, canvas.height);
+    } else {
+        ctx.fillRect(660, 0, 60, canvas.height);
+    }
+}
+
+// === BJÖRNAR ===
+
 function updateBears() {
     const height = player.getHeight();
 
-    // Spawna ny björn var 100:e meter
     if (height >= nextBearHeight && gameState === 'playing') {
-        // Hitta bron spelaren är nära
-        let bridgeY = level.groundY;
+        // Hitta plattformen spelaren är på
+        let spawnPlatform = null;
         for (const p of level.platforms) {
-            if (p.type !== 'ground' && Math.abs(p.y - (player.y + player.height)) < 20) {
-                bridgeY = p.y;
+            if (Math.abs(p.y - (player.y + player.height)) < 20) {
+                spawnPlatform = p;
                 break;
             }
         }
 
-        // Spawna på andra sidan bron
-        const bearX = player.x < 400 ? 720 : 20;
-        bears.push(new Bear(bearX, bridgeY));
+        if (spawnPlatform) {
+            const bearX = player.x < spawnPlatform.x + spawnPlatform.width / 2 ?
+                spawnPlatform.x + spawnPlatform.width - 50 :
+                spawnPlatform.x + 10;
+            const bear = new Bear(bearX, spawnPlatform.y);
+            bear.platformX = spawnPlatform.x;
+            bear.platformWidth = spawnPlatform.width;
+            bears.push(bear);
+            bearWarning = 120;
+        }
         nextBearHeight += 100;
-        bearWarning = 120;
     }
 
-    // Uppdatera björnar
     for (const bear of bears) {
         bear.update(player.x + player.width / 2);
+        // Begränsa björn till sin plattform
+        if (bear.platformX !== undefined) {
+            bear.x = Math.max(bear.platformX, Math.min(bear.x, bear.platformX + bear.platformWidth - bear.width));
+        }
     }
 
-    // Rensa björnar som är långt bort
     bears = bears.filter(b => b.active && Math.abs(b.bridgeY - player.y) < 1000);
 }
 
-// Rita UI
+// === UI ===
+
 function drawUI() {
     const height = player.getHeight();
 
-    // Höjdpanel
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     roundRect(ctx, canvas.width / 2 - 90, 8, 180, 44, 8);
     ctx.fill();
@@ -249,12 +269,10 @@ function drawUI() {
         ctx.fillText(`Bäst: ${player.maxHeight} m`, canvas.width / 2, 50);
     }
 
-    // Starthjälp
     if (height === 0 && player.vy === 0 && gameState === 'playing') {
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
         roundRect(ctx, canvas.width / 2 - 200, canvas.height - 120, 400, 55, 8);
         ctx.fill();
-
         ctx.font = '13px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         if (isTouchDevice) {
@@ -262,28 +280,22 @@ function drawUI() {
         } else {
             ctx.fillText('← → Röra sig   ↑ Hoppa/Klättra   Mellanslag = Hoppa', canvas.width / 2, canvas.height - 98);
         }
-        ctx.fillText('Hitta stegen och klättra uppåt!', canvas.width / 2, canvas.height - 78);
+        ctx.fillText('Hoppa på klippavsatserna och klättra stegarna!', canvas.width / 2, canvas.height - 78);
     }
 
-    // Björnvarning
     if (bearWarning > 0) {
         bearWarning--;
         const alpha = Math.min(1, bearWarning / 30);
         const shake = Math.sin(bearWarning * 0.5) * 3;
-
-        ctx.fillStyle = `rgba(180, 30, 30, ${alpha * 0.6})`;
+        ctx.fillStyle = `rgba(180,30,30,${alpha * 0.6})`;
         roundRect(ctx, canvas.width / 2 - 100, canvas.height / 2 - 40 + shake, 200, 50, 10);
         ctx.fill();
-
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
         ctx.font = 'bold 32px monospace';
         ctx.fillText('BJÖRN!', canvas.width / 2, canvas.height / 2 - 8 + shake);
     }
 
-    // Touch-knappar
-    if (isTouchDevice) {
-        drawTouchControls();
-    }
+    if (isTouchDevice) drawTouchControls();
 }
 
 function drawTouchControls() {
@@ -292,12 +304,10 @@ function drawTouchControls() {
         ctx.fillStyle = btn.pressed ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)';
         roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 16);
         ctx.fill();
-
         ctx.strokeStyle = 'rgba(255,255,255,0.3)';
         ctx.lineWidth = 2;
         roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 16);
         ctx.stroke();
-
         ctx.fillStyle = btn.pressed ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)';
         ctx.font = name === 'jump' ? 'bold 36px monospace' : 'bold 30px monospace';
         ctx.textAlign = 'center';
@@ -321,42 +331,35 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 
-// Dödsanimation
 function drawDeathScreen() {
     const alpha = Math.min(0.7, stateTimer / 60);
-    ctx.fillStyle = `rgba(80, 0, 0, ${alpha})`;
+    ctx.fillStyle = `rgba(80,0,0,${alpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     if (stateTimer > 20) {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(deathCause, canvas.width / 2, canvas.height / 2 - 20);
-
         ctx.font = '18px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
         ctx.fillText(`Höjd: ${player.maxHeight} m`, canvas.width / 2, canvas.height / 2 + 15);
-
         if (stateTimer > 60) {
             ctx.font = '14px monospace';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.fillText(
-                isTouchDevice ? 'Tryck för att försöka igen' : 'Tryck mellanslag för att försöka igen',
-                canvas.width / 2, canvas.height / 2 + 50
-            );
+            ctx.fillText(isTouchDevice ? 'Tryck för att försöka igen' : 'Tryck mellanslag', canvas.width / 2, canvas.height / 2 + 50);
         }
     }
 }
 
-// Huvudloop
+// === HUVUDLOOP ===
+
 function gameLoop() {
     if (gameState === 'playing') {
         player.update(keys, level.platforms, level.ladders);
         level.update(player.y);
         updateBears();
-        checkSpikeCollision();
 
-        // Kolla dödsorsaker
+        // Spikar (hanteras i player.js vid landning)
         if (player.hitSpikes) {
             gameState = 'dead';
             deathCause = 'Spikar!';
@@ -380,7 +383,6 @@ function gameLoop() {
             stateTimer = 0;
         }
 
-        // Under marken
         if (player.y > level.groundY + 100) {
             gameState = 'dead';
             deathCause = 'Du föll!';
@@ -393,26 +395,17 @@ function gameLoop() {
         }
     }
 
-    // Kamera
     const targetCameraY = player.y - canvas.height * 0.45;
     cameraY += (targetCameraY - cameraY) * 0.08;
 
-    // Rita allt
     drawBackground();
     level.draw(ctx, cameraY, canvas.height);
-
-    // Rita björnar
-    for (const bear of bears) {
-        bear.draw(ctx, cameraY);
-    }
-
+    for (const bear of bears) bear.draw(ctx, cameraY);
     player.draw(ctx, cameraY);
     drawUI();
-
     if (gameState === 'dead') drawDeathScreen();
 
     requestAnimationFrame(gameLoop);
 }
 
-// Starta!
 gameLoop();

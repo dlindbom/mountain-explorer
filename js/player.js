@@ -171,6 +171,16 @@ class Player {
                 this.vy = 0;
                 this.onGround = true;
                 this.lastGroundY = this.y;
+
+                // Kolla om vi landade på spikar
+                if (p.spikeStart !== undefined) {
+                    const spikeLeft = p.x + p.spikeStart;
+                    const spikeRight = spikeLeft + p.spikeWidth;
+                    if (this.x + this.width - 2 > spikeLeft && this.x + 2 < spikeRight) {
+                        this.hitSpikes = true;
+                    }
+                }
+
                 break;
             }
         }
