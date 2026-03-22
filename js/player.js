@@ -14,9 +14,11 @@ class Player {
         this.jumpForce = -10.5;
         this.gravity = 0.5;
         this.onGround = false;
-        this.facing = 1; // 1 = höger, -1 = vänster
-        this.maxHeight = 0; // Högsta nådda höjd i meter
+        this.facing = 1;
+        this.maxHeight = 0;
         this.walkFrame = 0;
+        this.hitSpikes = false;
+        this.lastGroundY = y;
     }
 
     reset() {
@@ -25,9 +27,13 @@ class Player {
         this.vx = 0;
         this.vy = 0;
         this.onGround = false;
+        this.hitSpikes = false;
+        this.lastGroundY = this.startY;
     }
 
     update(keys, platforms) {
+        this.hitSpikes = false;
+
         // Rörelse vänster/höger
         if (keys['ArrowLeft'] || keys['a']) {
             this.vx = -this.speed;
@@ -56,20 +62,31 @@ class Player {
         if (this.x < 0) this.x = 0;
         if (this.x + this.width > 800) this.x = 800 - this.width;
 
-        // Kollision med plattformar (bara ovanifrån)
+        // Kollision med plattformar
         this.onGround = false;
         for (const p of platforms) {
-            if (this.vy < 0) continue; // Hoppar uppåt - passera igenom
+            if (this.vy < 0) continue;
 
-            // Horisontell överlapp?
             if (this.x + this.width <= p.x || this.x >= p.x + p.width) continue;
 
-            // Fötterna inom plattformen?
             const feetY = this.y + this.height;
             if (feetY >= p.y && feetY <= p.y + p.height + 8) {
                 this.y = p.y - this.height;
                 this.vy = 0;
                 this.onGround = true;
+                this.lastGroundY = this.y;
+
+                // Kolla om vi landade på spikar
+                if (p.spikeStart !== undefined) {
+                    const spikeLeft = p.x + p.spikeStart;
+                    const spikeRight = spikeLeft + p.spikeWidth;
+                    const playerLeft = this.x + 2;
+                    const playerRight = this.x + this.width - 2;
+
+                    if (playerRight > spikeLeft && playerLeft < spikeRight) {
+                        this.hitSpikes = true;
+                    }
+                }
                 break;
             }
         }
@@ -88,7 +105,6 @@ class Player {
         }
     }
 
-    // Räkna om pixlar till meter
     getHeight() {
         return Math.max(0, Math.round((this.startY - this.y) / 10));
     }
@@ -99,7 +115,7 @@ class Player {
         const legOffset = Math.sin(this.walkFrame * Math.PI) * 3;
 
         // Skugga
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.beginPath();
         ctx.ellipse(sx + this.width / 2, sy + this.height, 10, 3, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -107,7 +123,6 @@ class Player {
         // Ben
         ctx.fillStyle = '#3D5A40';
         if (this.onGround && this.vx !== 0) {
-            // Gående animation
             ctx.fillRect(sx + 4, sy + 24 + legOffset, 7, 8 - legOffset);
             ctx.fillRect(sx + 13, sy + 24 - legOffset, 7, 8 + legOffset);
         } else {

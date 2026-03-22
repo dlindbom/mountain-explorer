@@ -7,7 +7,7 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
 
-// Anpassa canvas till skärmen (viktigt för iPad/mobil)
+// Anpassa canvas till skärmen
 function resizeCanvas() {
     const ratio = canvas.width / canvas.height;
     const windowRatio = window.innerWidth / window.innerHeight;
@@ -24,18 +24,18 @@ resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 // Skapa spelet
-const level = new Level();
-const player = new Player(380, level.groundY - 32);
+let level = new Level();
+let player = new Player(380, level.groundY - 32);
 
 let cameraY = 0;
 const keys = {};
-let gameState = 'playing'; // 'playing', 'dead', 'victory'
+let gameState = 'playing';
 let stateTimer = 0;
 
 // Kolla om enheten har touch
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
-// Touch-knappar (visas bara på touch-enheter)
+// Touch-knappar
 const touchButtons = {
     left:  { x: 20,  y: 480, w: 80, h: 80, key: 'ArrowLeft',  label: '←', pressed: false },
     right: { x: 120, y: 480, w: 80, h: 80, key: 'ArrowRight', label: '→', pressed: false },
@@ -54,7 +54,7 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Omvandla touch-koordinater till canvas-koordinater
+// Touch-hantering
 function touchToCanvas(touch) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -65,22 +65,18 @@ function touchToCanvas(touch) {
     };
 }
 
-// Kolla om en punkt träffar en knapp
 function hitButton(pos, btn) {
     return pos.x >= btn.x && pos.x <= btn.x + btn.w &&
            pos.y >= btn.y && pos.y <= btn.y + btn.h;
 }
 
-// Uppdatera alla touch-knappar baserat på aktiva touches
 function updateTouchButtons(touches) {
-    // Nollställ alla knappar
     for (const name in touchButtons) {
         const btn = touchButtons[name];
         btn.pressed = false;
         keys[btn.key] = false;
     }
 
-    // Kolla varje aktiv touch mot varje knapp
     for (let i = 0; i < touches.length; i++) {
         const pos = touchToCanvas(touches[i]);
         for (const name in touchButtons) {
@@ -96,6 +92,11 @@ function updateTouchButtons(touches) {
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
     updateTouchButtons(e.touches);
+
+    // Touch för omstart vid död
+    if (gameState === 'dead' && stateTimer > 90) {
+        restartGame();
+    }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
@@ -113,83 +114,103 @@ canvas.addEventListener('touchcancel', (e) => {
     updateTouchButtons(e.touches);
 }, { passive: false });
 
-// Rita himmel och bakgrund
+// Starta om spelet
+function restartGame() {
+    level = new Level();
+    player = new Player(380, level.groundY - 32);
+    cameraY = 0;
+    gameState = 'playing';
+    stateTimer = 0;
+}
+
+// Bergvägg-textur (förgenererad för prestanda)
+const wallCanvas = document.createElement('canvas');
+wallCanvas.width = 800;
+wallCanvas.height = 200;
+const wallCtx = wallCanvas.getContext('2d');
+
+function generateWallTexture() {
+    // Grundfärg
+    wallCtx.fillStyle = '#4A4A4A';
+    wallCtx.fillRect(0, 0, 800, 200);
+
+    // Stenblock-mönster
+    for (let row = 0; row < 8; row++) {
+        const rowOffset = (row % 2) * 40;
+        for (let col = -1; col < 11; col++) {
+            const bx = col * 80 + rowOffset;
+            const by = row * 25;
+            const bw = 75 + Math.random() * 5;
+            const bh = 22 + Math.random() * 3;
+
+            // Varierande grå
+            const shade = 60 + Math.random() * 25;
+            wallCtx.fillStyle = `rgb(${shade}, ${shade - 3}, ${shade - 5})`;
+            wallCtx.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
+
+            // Ljus kant uppe
+            wallCtx.fillStyle = `rgba(255, 255, 255, 0.05)`;
+            wallCtx.fillRect(bx + 2, by + 1, bw - 4, 1);
+
+            // Mörk kant nere
+            wallCtx.fillStyle = `rgba(0, 0, 0, 0.1)`;
+            wallCtx.fillRect(bx + 2, by + bh - 2, bw - 4, 1);
+        }
+    }
+
+    // Sprickor
+    wallCtx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    wallCtx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+        wallCtx.beginPath();
+        const sx = Math.random() * 800;
+        const sy = Math.random() * 200;
+        wallCtx.moveTo(sx, sy);
+        wallCtx.lineTo(sx + (Math.random() - 0.5) * 30, sy + 10 + Math.random() * 20);
+        wallCtx.stroke();
+    }
+}
+generateWallTexture();
+
+// Rita bergväggen som bakgrund
 function drawBackground() {
-    // Himmelfärg ändras med höjden
+    // Tila väggtexturen
+    const offsetY = (-cameraY * 0.8) % 200;
+    for (let y = -200 + offsetY; y < canvas.height + 200; y += 200) {
+        ctx.drawImage(wallCanvas, 0, y);
+    }
+
+    // Mörkare gradient i kanterna (djup-effekt)
+    const edgeGrad = ctx.createLinearGradient(0, 0, 60, 0);
+    edgeGrad.addColorStop(0, 'rgba(0, 0, 0, 0.4)');
+    edgeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = edgeGrad;
+    ctx.fillRect(0, 0, 60, canvas.height);
+
+    const edgeGrad2 = ctx.createLinearGradient(800, 0, 740, 0);
+    edgeGrad2.addColorStop(0, 'rgba(0, 0, 0, 0.4)');
+    edgeGrad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = edgeGrad2;
+    ctx.fillRect(740, 0, 60, canvas.height);
+
+    // Subtil höjdbaserad färgton
     const altitude = Math.max(0, -cameraY);
-    const maxAlt = Math.abs(level.peakY);
-    const progress = Math.min(1, altitude / maxAlt);
+    const progress = Math.min(1, altitude / 5000);
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-
-    if (progress > 0.7) {
-        // Hög höjd - mörk himmel
-        gradient.addColorStop(0, '#0F1B33');
-        gradient.addColorStop(1, '#1B3A5C');
-    } else if (progress > 0.4) {
-        // Mellanhöjd
-        gradient.addColorStop(0, '#2E5090');
-        gradient.addColorStop(1, '#6B9AC4');
-    } else {
-        // Låg höjd - ljus himmel
-        gradient.addColorStop(0, '#5BA3D9');
-        gradient.addColorStop(1, '#A8D8EA');
+    if (progress > 0.5) {
+        // Kall blåton på hög höjd
+        ctx.fillStyle = `rgba(100, 130, 170, ${(progress - 0.5) * 0.15})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Stjärnor vid hög höjd
-    if (progress > 0.6) {
-        const starAlpha = (progress - 0.6) / 0.4;
-        ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha * 0.8})`;
-        for (let i = 0; i < 30; i++) {
-            const sx = (i * 137 + 50) % 780 + 10;
-            const sy = (i * 97 + 30) % 580 + 10;
-            const size = (i % 3) + 1;
-            ctx.fillRect(sx, sy, size, size);
-        }
-    }
-
-    // Moln (parallax-effekt)
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 - progress * 0.2})`;
-    for (let i = 0; i < 6; i++) {
-        const cloudBaseY = i * 300 + 100;
-        const cloudScreenY = cloudBaseY - cameraY * 0.2;
-        const cloudX = ((i * 173 + 80) % 700) + 20;
-
-        // Visa bara moln som är nära synfältet
-        if (cloudScreenY > -100 && cloudScreenY < canvas.height + 100) {
-            ctx.beginPath();
-            ctx.arc(cloudX, cloudScreenY, 25 + i * 3, 0, Math.PI * 2);
-            ctx.arc(cloudX + 30, cloudScreenY - 8, 20 + i * 2, 0, Math.PI * 2);
-            ctx.arc(cloudX + 55, cloudScreenY, 22 + i * 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // Bakgrundsbergen (parallax)
-    ctx.fillStyle = 'rgba(100, 115, 130, 0.25)';
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height);
-    ctx.lineTo(100, 300 - cameraY * 0.05);
-    ctx.lineTo(220, 400 - cameraY * 0.05);
-    ctx.lineTo(350, 200 - cameraY * 0.05);
-    ctx.lineTo(500, 350 - cameraY * 0.05);
-    ctx.lineTo(650, 180 - cameraY * 0.05);
-    ctx.lineTo(800, 300 - cameraY * 0.05);
-    ctx.lineTo(800, canvas.height);
-    ctx.fill();
 }
 
 // Rita höjdmätare
 function drawUI() {
     const height = player.getHeight();
     const maxHeight = player.maxHeight;
-    const totalHeight = Math.round((level.groundY - level.peakY) / 10);
 
     // Höjdpanel
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     roundRect(ctx, canvas.width / 2 - 90, 8, 180, 44, 8);
     ctx.fill();
 
@@ -199,26 +220,16 @@ function drawUI() {
     ctx.textAlign = 'center';
     ctx.fillText(`⛰ ${height} m`, canvas.width / 2, 36);
 
-    // Progressbar
-    const barWidth = 160;
-    const barX = canvas.width / 2 - barWidth / 2;
-    const progress = Math.min(1, height / totalHeight);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillRect(barX, 42, barWidth, 4);
-    ctx.fillStyle = '#FFD700';
-    ctx.fillRect(barX, 42, barWidth * progress, 4);
-
     // Bästa höjd
-    if (maxHeight > 0 && height < maxHeight) {
+    if (maxHeight > height) {
         ctx.font = '11px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText(`Bäst: ${maxHeight} m`, canvas.width / 2, 62);
+        ctx.fillText(`Bäst: ${maxHeight} m`, canvas.width / 2, 50);
     }
 
-    // Kontrollhjälp (visas bara vid start)
+    // Kontrollhjälp
     if (height === 0 && player.vy === 0 && gameState === 'playing') {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         roundRect(ctx, canvas.width / 2 - 180, canvas.height - 120, 360, 35, 8);
         ctx.fill();
 
@@ -231,30 +242,33 @@ function drawUI() {
         }
     }
 
-    // Rita touch-knappar (bara på touch-enheter)
+    // Varning för spikar (visas tidigt)
+    if (height > 0 && height < 15 && gameState === 'playing') {
+        ctx.font = '12px monospace';
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+        ctx.fillText('Akta spikarna!', canvas.width / 2, 70);
+    }
+
+    // Touch-knappar
     if (isTouchDevice) {
         drawTouchControls();
     }
 }
 
-// Rita touch-kontroller
 function drawTouchControls() {
     for (const name in touchButtons) {
         const btn = touchButtons[name];
         const isPressed = btn.pressed;
 
-        // Knappbakgrund
         ctx.fillStyle = isPressed ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.15)';
         roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 16);
         ctx.fill();
 
-        // Kant
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
         roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 16);
         ctx.stroke();
 
-        // Symbol
         ctx.fillStyle = isPressed ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.6)';
         ctx.font = name === 'jump' ? 'bold 36px monospace' : 'bold 30px monospace';
         ctx.textAlign = 'center';
@@ -264,7 +278,6 @@ function drawTouchControls() {
     ctx.textBaseline = 'alphabetic';
 }
 
-// Hjälpfunktion: rundade rektanglar
 function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -282,43 +295,32 @@ function roundRect(ctx, x, y, w, h, r) {
 // Dödsanimation
 function drawDeathScreen() {
     const alpha = Math.min(0.7, stateTimer / 60);
-    ctx.fillStyle = `rgba(139, 0, 0, ${alpha})`;
+    ctx.fillStyle = `rgba(100, 0, 0, ${alpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (stateTimer > 20) {
         ctx.fillStyle = '#FFFFFF';
         ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('Du föll!', canvas.width / 2, canvas.height / 2 - 10);
 
-        ctx.font = '16px monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.fillText(`Du nådde ${player.getHeight()} meter`, canvas.width / 2, canvas.height / 2 + 25);
-    }
-}
-
-// Vinst-skärm
-function drawVictoryScreen() {
-    const alpha = Math.min(0.5, stateTimer / 60);
-    ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 42px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('Toppen nådd!', canvas.width / 2, canvas.height / 2 - 20);
-
-    ctx.fillStyle = '#FFF';
-    ctx.font = '20px monospace';
-    ctx.fillText(`Du klättrade ${player.maxHeight} meter!`, canvas.width / 2, canvas.height / 2 + 20);
-
-    if (stateTimer > 90) {
-        ctx.font = '14px monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        if (isTouchDevice) {
-            ctx.fillText('Tryck på skärmen för att spela igen', canvas.width / 2, canvas.height / 2 + 60);
+        if (player.hitSpikes) {
+            ctx.fillText('Spikar!', canvas.width / 2, canvas.height / 2 - 20);
         } else {
-            ctx.fillText('Tryck mellanslag för att spela igen', canvas.width / 2, canvas.height / 2 + 60);
+            ctx.fillText('Du föll!', canvas.width / 2, canvas.height / 2 - 20);
+        }
+
+        ctx.font = '18px monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.fillText(`Höjd: ${player.maxHeight} m`, canvas.width / 2, canvas.height / 2 + 15);
+
+        if (stateTimer > 60) {
+            ctx.font = '14px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            if (isTouchDevice) {
+                ctx.fillText('Tryck för att försöka igen', canvas.width / 2, canvas.height / 2 + 50);
+            } else {
+                ctx.fillText('Tryck mellanslag för att försöka igen', canvas.width / 2, canvas.height / 2 + 50);
+            }
         }
     }
 }
@@ -327,35 +329,31 @@ function drawVictoryScreen() {
 function gameLoop() {
     if (gameState === 'playing') {
         player.update(keys, level.platforms);
+        level.update(player.y);
 
-        // Kolla om spelaren föll under marken
-        if (player.y > level.groundY + 100) {
+        // Död: spikar
+        if (player.hitSpikes) {
             gameState = 'dead';
             stateTimer = 0;
         }
 
-        // Kolla om spelaren nått toppen
-        const totalHeight = Math.round((level.groundY - level.peakY) / 10);
-        if (player.getHeight() >= totalHeight - 5) {
-            gameState = 'victory';
+        // Död: föll för långt under senaste plattform
+        if (player.y > player.lastGroundY + 500) {
+            gameState = 'dead';
+            stateTimer = 0;
+        }
+
+        // Död: under marken
+        if (player.y > level.groundY + 100) {
+            gameState = 'dead';
             stateTimer = 0;
         }
     } else {
         stateTimer++;
 
-        // Omstart efter död
-        if (gameState === 'dead' && stateTimer > 90) {
-            player.reset();
-            cameraY = 0;
-            gameState = 'playing';
-        }
-
-        // Omstart efter vinst (mellanslag eller touch)
-        if (gameState === 'victory' && stateTimer > 90 && (keys[' '] || keys['_touchRestart'])) {
-            keys['_touchRestart'] = false;
-            player.reset();
-            cameraY = 0;
-            gameState = 'playing';
+        // Omstart med mellanslag
+        if (gameState === 'dead' && stateTimer > 90 && keys[' ']) {
+            restartGame();
         }
     }
 
@@ -370,17 +368,9 @@ function gameLoop() {
     drawUI();
 
     if (gameState === 'dead') drawDeathScreen();
-    if (gameState === 'victory') drawVictoryScreen();
 
     requestAnimationFrame(gameLoop);
 }
-
-// Touch på skärmen för omstart vid vinst
-canvas.addEventListener('touchstart', (e) => {
-    if (gameState === 'victory' && stateTimer > 90) {
-        keys['_touchRestart'] = true;
-    }
-}, { passive: true });
 
 // Starta spelet!
 gameLoop();
