@@ -1,7 +1,53 @@
 // UI: höjdmätare, varningar, dödsanimation, touch-knappar
 
+// Skadeeffekt-state
+let damageFlashTimer = 0;
+let lastKnownHealth = -1;
+
 function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
     const height = player.getHeight();
+
+    // Skadeeffekt: kolla om hälsa minskat
+    if (lastKnownHealth < 0) lastKnownHealth = player.health;
+    if (player.health < lastKnownHealth) {
+        damageFlashTimer = 15; // 15 frames röd blinkning
+        // Vibrera enheten om möjligt
+        if (navigator.vibrate) navigator.vibrate(80);
+    }
+    lastKnownHealth = player.health;
+
+    // Rita röd blinkning runt kanterna
+    if (damageFlashTimer > 0) {
+        const a = damageFlashTimer / 15 * 0.5;
+        // Röd vinjett runt kanterna
+        const edgeSize = 60;
+        // Topp
+        const topGrad = ctx.createLinearGradient(0, 0, 0, edgeSize);
+        topGrad.addColorStop(0, `rgba(200, 0, 0, ${a})`);
+        topGrad.addColorStop(1, 'rgba(200, 0, 0, 0)');
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, canvas.width, edgeSize);
+        // Botten
+        const botGrad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - edgeSize);
+        botGrad.addColorStop(0, `rgba(200, 0, 0, ${a})`);
+        botGrad.addColorStop(1, 'rgba(200, 0, 0, 0)');
+        ctx.fillStyle = botGrad;
+        ctx.fillRect(0, canvas.height - edgeSize, canvas.width, edgeSize);
+        // Vänster
+        const leftGrad = ctx.createLinearGradient(0, 0, edgeSize, 0);
+        leftGrad.addColorStop(0, `rgba(200, 0, 0, ${a})`);
+        leftGrad.addColorStop(1, 'rgba(200, 0, 0, 0)');
+        ctx.fillStyle = leftGrad;
+        ctx.fillRect(0, 0, edgeSize, canvas.height);
+        // Höger
+        const rightGrad = ctx.createLinearGradient(canvas.width, 0, canvas.width - edgeSize, 0);
+        rightGrad.addColorStop(0, `rgba(200, 0, 0, ${a})`);
+        rightGrad.addColorStop(1, 'rgba(200, 0, 0, 0)');
+        ctx.fillStyle = rightGrad;
+        ctx.fillRect(canvas.width - edgeSize, 0, edgeSize, canvas.height);
+
+        damageFlashTimer--;
+    }
 
     // Höjdpanel
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -28,6 +74,16 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
 
     // Hälsomätare (vänster uppe)
     drawHealthBar(ctx, player);
+
+    // Pengar (höger uppe)
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    roundRect(ctx, canvas.width - 110, 12, 95, 22, 5);
+    ctx.fill();
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${economy.coins} kr`, canvas.width - 20, 28);
+    ctx.textAlign = 'center';
 
     // Starthjälp
     if (height === 0 && player.vy === 0 && gameState === 'playing') {

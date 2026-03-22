@@ -1,4 +1,4 @@
-// Yeti - stor snövarelse, dubbelt så stor som björnen, 50% snabbare
+// Yeti - stor snövarelse, dubbelt så stor som björnen, 25% snabbare
 
 class Yeti {
     constructor(x, bridgeY) {
@@ -7,7 +7,7 @@ class Yeti {
         this.width = 80;
         this.height = 60;
         this.y = bridgeY - this.height;
-        this.speed = 8.4; // 50% snabbare än björnen (5.6 * 1.5)
+        this.speed = 7.0; // 25% snabbare än björnen (5.6 * 1.25)
         this.facing = 1;
         this.active = true;
         this.walkFrame = 0;
