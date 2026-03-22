@@ -19,12 +19,24 @@ const CHARACTERS = {
         desc: 'Springer 50% snabbare',
         speed: 6.75, // 50% snabbare (4.5 * 1.5)
         jumpForce: -10.5,
-        climbSpeed: 4, // Lite snabbare klättring också
-        // Färger
-        jacket: '#D44B8A',   // Rosa jacka
+        climbSpeed: 4,
+        jacket: '#D44B8A',
         pants: '#4A3D6B',
-        hat: '#44B89D',      // Turkos mössa
-        backpack: '#C85A30', // Orange ryggsäck
+        hat: '#44B89D',
+        backpack: '#C85A30',
+    },
+    pappa: {
+        name: 'Pappa',
+        desc: 'Tål 50% mer skada',
+        speed: 4.5,
+        jumpForce: -10.5,
+        climbSpeed: 3,
+        scale: 1.5,       // 50% större
+        maxHealth: 150,    // 50% mer hälsa
+        jacket: '#5A5A5A',   // Grå jacka
+        pants: '#3A3A3A',
+        hat: '#8B0000',      // Mörkröd mössa
+        backpack: '#4A3520', // Brun ryggsäck
     }
 };
 
@@ -34,8 +46,18 @@ class Player {
         this.startY = y;
         this.x = x;
         this.y = y;
-        this.width = 24;
-        this.height = 32;
+        // Karaktärsval (läs in innan storlek sätts)
+        this.characterId = characterId || 'alfred';
+        const char = CHARACTERS[this.characterId];
+        this.characterName = char.name;
+        this.speed = char.speed;
+        this.jumpForce = char.jumpForce;
+        this.climbSpeed = char.climbSpeed;
+        this.colors = char;
+        this.scale = char.scale || 1;
+
+        this.width = Math.round(24 * this.scale);
+        this.height = Math.round(32 * this.scale);
         this.vx = 0;
         this.vy = 0;
         this.gravity = 0.5;
@@ -47,17 +69,8 @@ class Player {
         this.lastGroundY = y;
 
         // Hälsa
-        this.maxHealth = 100;
-        this.health = 100;
-
-        // Karaktärsval
-        this.characterId = characterId || 'alfred';
-        const char = CHARACTERS[this.characterId];
-        this.characterName = char.name;
-        this.speed = char.speed;
-        this.jumpForce = char.jumpForce;
-        this.climbSpeed = char.climbSpeed;
-        this.colors = char;
+        this.maxHealth = char.maxHealth || 100;
+        this.health = this.maxHealth;
 
         // Klättring
         this.climbing = false;
@@ -257,94 +270,115 @@ class Player {
         const sx = this.x;
         const sy = this.y - cameraY;
 
+        // Skala allt ritande
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.scale(this.scale, this.scale);
+
         if (this.climbing) {
-            this.drawClimbing(ctx, sx, sy);
+            this.drawClimbing(ctx);
         } else {
-            this.drawNormal(ctx, sx, sy);
+            this.drawNormal(ctx);
         }
+
+        ctx.restore();
     }
 
-    drawClimbing(ctx, sx, sy) {
+    drawClimbing(ctx) {
         const offset = Math.sin(this.climbFrame * Math.PI) * 3;
         const c = this.colors;
 
         ctx.fillStyle = '#FFDAB9';
-        ctx.fillRect(sx - 4, sy + 3 - offset, 5, 10);
-        ctx.fillRect(sx + this.width - 1, sy + 3 + offset, 5, 10);
+        ctx.fillRect(-4, 3 - offset, 5, 10);
+        ctx.fillRect(20, 3 + offset, 5, 10);
 
         ctx.fillStyle = c.pants;
-        ctx.fillRect(sx + 4, sy + 24 + offset, 7, 8);
-        ctx.fillRect(sx + 13, sy + 24 - offset, 7, 8);
+        ctx.fillRect(4, 24 + offset, 7, 8);
+        ctx.fillRect(13, 24 - offset, 7, 8);
 
         ctx.fillStyle = '#5C4033';
-        ctx.fillRect(sx + 3, sy + 30, 9, 3);
-        ctx.fillRect(sx + 12, sy + 30, 9, 3);
+        ctx.fillRect(3, 30, 9, 3);
+        ctx.fillRect(12, 30, 9, 3);
 
         ctx.fillStyle = c.jacket;
-        ctx.fillRect(sx + 3, sy + 12, this.width - 6, 13);
+        ctx.fillRect(3, 12, 18, 13);
 
         ctx.fillStyle = '#FFDAB9';
-        ctx.fillRect(sx + 5, sy + 3, this.width - 10, 11);
+        ctx.fillRect(5, 3, 14, 11);
 
         ctx.fillStyle = c.hat;
-        ctx.fillRect(sx + 4, sy, this.width - 8, 6);
+        ctx.fillRect(4, 0, 16, 6);
 
         ctx.fillStyle = '#1D3557';
-        ctx.fillRect(sx + 8, sy + 5, 2, 2);
-        ctx.fillRect(sx + 14, sy + 5, 2, 2);
+        ctx.fillRect(8, 5, 2, 2);
+        ctx.fillRect(14, 5, 2, 2);
+
+        // Skägg för Pappa
+        if (this.characterId === 'pappa') {
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(6, 11, 12, 4);
+        }
     }
 
-    drawNormal(ctx, sx, sy) {
+    drawNormal(ctx) {
         const legOffset = Math.sin(this.walkFrame * Math.PI) * 3;
         const c = this.colors;
 
         // Skugga
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.beginPath();
-        ctx.ellipse(sx + this.width / 2, sy + this.height, 10, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(12, 32, 10, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Ben
         ctx.fillStyle = c.pants;
         if (this.onGround && this.vx !== 0) {
-            ctx.fillRect(sx + 4, sy + 24 + legOffset, 7, 8 - legOffset);
-            ctx.fillRect(sx + 13, sy + 24 - legOffset, 7, 8 + legOffset);
+            ctx.fillRect(4, 24 + legOffset, 7, 8 - legOffset);
+            ctx.fillRect(13, 24 - legOffset, 7, 8 + legOffset);
         } else {
-            ctx.fillRect(sx + 4, sy + 24, 7, 8);
-            ctx.fillRect(sx + 13, sy + 24, 7, 8);
+            ctx.fillRect(4, 24, 7, 8);
+            ctx.fillRect(13, 24, 7, 8);
         }
 
         // Kängor
         ctx.fillStyle = '#5C4033';
-        ctx.fillRect(sx + 3, sy + 30, 9, 3);
-        ctx.fillRect(sx + 12, sy + 30, 9, 3);
+        ctx.fillRect(3, 30, 9, 3);
+        ctx.fillRect(12, 30, 9, 3);
 
         // Kropp
         ctx.fillStyle = c.jacket;
-        ctx.fillRect(sx + 3, sy + 12, this.width - 6, 13);
+        ctx.fillRect(3, 12, 18, 13);
 
         // Ryggsäck
-        const backX = this.facing === 1 ? sx : sx + this.width - 6;
+        const backX = this.facing === 1 ? 0 : 18;
         ctx.fillStyle = c.backpack;
-        ctx.fillRect(backX, sy + 13, 6, 10);
+        ctx.fillRect(backX, 13, 6, 10);
 
         // Huvud
         ctx.fillStyle = '#FFDAB9';
-        ctx.fillRect(sx + 5, sy + 3, this.width - 10, 11);
+        ctx.fillRect(5, 3, 14, 11);
 
         // Mössa
         ctx.fillStyle = c.hat;
-        ctx.fillRect(sx + 4, sy, this.width - 8, 6);
-        ctx.fillRect(sx + 7, sy - 2, this.width - 14, 3);
+        ctx.fillRect(4, 0, 16, 6);
+        ctx.fillRect(7, -2, 10, 3);
 
         // Ögon
         const eyeX = this.facing === 1 ? 2 : -2;
         ctx.fillStyle = '#1D3557';
-        ctx.fillRect(sx + 8 + eyeX, sy + 7, 2, 2);
-        ctx.fillRect(sx + 14 + eyeX, sy + 7, 2, 2);
+        ctx.fillRect(8 + eyeX, 7, 2, 2);
+        ctx.fillRect(14 + eyeX, 7, 2, 2);
+
+        // Skägg för Pappa
+        if (this.characterId === 'pappa') {
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(7 + eyeX, 11, 10, 4);
+            ctx.fillRect(6 + eyeX, 12, 2, 2);
+            ctx.fillRect(18 + eyeX, 12, 2, 2);
+        }
 
         // Mun
         ctx.fillStyle = '#C1666B';
-        ctx.fillRect(sx + 10 + eyeX, sy + 11, 4, 1);
+        ctx.fillRect(10 + eyeX, this.characterId === 'pappa' ? 15 : 11, 4, 1);
     }
 }

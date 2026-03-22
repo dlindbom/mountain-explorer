@@ -57,6 +57,7 @@ window.addEventListener('keydown', (e) => {
     if (gameState !== 'charselect') return;
     if (e.key === '1') startGame('alfred');
     if (e.key === '2') startGame('astrid');
+    if (e.key === '3') startGame('pappa');
 });
 
 function handleCharacterClick(e) {
