@@ -24,12 +24,15 @@ window.addEventListener('resize', resizeCanvas);
 let level = new Level();
 let player = new Player(380, level.groundY - 32);
 let bears = [];
+let rockfall = new RockfallManager();
 let cameraY = 0;
 let gameState = 'playing';
 let stateTimer = 0;
 let deathCause = '';
 let nextBearHeight = 100;
+let nextYetiHeight = 200; // Första yeti vid 200m
 let bearWarning = 0;
+let enemyWarningText = 'BJÖRN!';
 
 // Koppla input
 setupInput(canvas, () => gameState, () => stateTimer, restartGame);
@@ -40,46 +43,69 @@ function restartGame() {
     player = new Player(380, level.groundY - 32);
     player.maxHeight = savedMax;
     bears = [];
+    rockfall.reset();
     nextBearHeight = 100;
+    nextYetiHeight = 200;
     bearWarning = 0;
     cameraY = 0;
     gameState = 'playing';
     stateTimer = 0;
 }
 
-// Björn-spawning och uppdatering
-function updateBears() {
+// Fiende-spawning (björnar och yetis)
+function updateEnemies() {
     const height = player.getHeight();
 
+    // Björn var 100:e meter
     if (height >= nextBearHeight && gameState === 'playing') {
-        let spawnPlatform = null;
-        for (const p of level.platforms) {
-            if (Math.abs(p.y - (player.y + player.height)) < 20) {
-                spawnPlatform = p;
-                break;
-            }
-        }
-        if (spawnPlatform) {
-            const bearX = player.x < spawnPlatform.x + spawnPlatform.width / 2 ?
-                spawnPlatform.x + spawnPlatform.width - 50 :
-                spawnPlatform.x + 10;
-            const bear = new Bear(bearX, spawnPlatform.y);
-            bear.platformX = spawnPlatform.x;
-            bear.platformWidth = spawnPlatform.width;
-            bears.push(bear);
-            bearWarning = 120;
-        }
+        spawnEnemy('bear');
         nextBearHeight += 100;
     }
 
-    for (const bear of bears) {
-        bear.update(player.x + player.width / 2);
-        if (bear.platformX !== undefined) {
-            bear.x = Math.max(bear.platformX, Math.min(bear.x, bear.platformX + bear.platformWidth - bear.width));
+    // Yeti var 200:e meter (börjar vid 200m)
+    if (height >= nextYetiHeight && gameState === 'playing') {
+        spawnEnemy('yeti');
+        nextYetiHeight += 200;
+    }
+
+    // Uppdatera alla fiender
+    for (const enemy of bears) {
+        enemy.update(player.x + player.width / 2);
+        if (enemy.platformX !== undefined) {
+            enemy.x = Math.max(enemy.platformX, Math.min(enemy.x, enemy.platformX + enemy.platformWidth - enemy.width));
         }
     }
 
     bears = bears.filter(b => b.active && Math.abs(b.bridgeY - player.y) < 1000);
+}
+
+function spawnEnemy(type) {
+    let spawnPlatform = null;
+    for (const p of level.platforms) {
+        if (Math.abs(p.y - (player.y + player.height)) < 20) {
+            spawnPlatform = p;
+            break;
+        }
+    }
+    if (!spawnPlatform) return;
+
+    const enemyX = player.x < spawnPlatform.x + spawnPlatform.width / 2 ?
+        spawnPlatform.x + spawnPlatform.width - 60 :
+        spawnPlatform.x + 10;
+
+    let enemy;
+    if (type === 'yeti') {
+        enemy = new Yeti(enemyX, spawnPlatform.y);
+        bearWarning = 150;
+        enemyWarningText = 'YETI!';
+    } else {
+        enemy = new Bear(enemyX, spawnPlatform.y);
+        bearWarning = 120;
+        enemyWarningText = 'BJÖRN!';
+    }
+    enemy.platformX = spawnPlatform.x;
+    enemy.platformWidth = spawnPlatform.width;
+    bears.push(enemy);
 }
 
 // Huvudloop
@@ -88,23 +114,34 @@ function gameLoop() {
     if (gameState === 'playing') {
         player.update(keys, level.platforms, level.ladders);
         level.update(player.y);
-        updateBears();
+        updateEnemies();
+        rockfall.update(player.y, player.getHeight(), level.groundY);
 
+        // Spikar
         if (player.hitSpikes) {
             gameState = 'dead';
             deathCause = 'Spikar!';
             stateTimer = 0;
         }
 
-        for (const bear of bears) {
-            if (bear.collidesWith(player)) {
+        // Fiende-kollision
+        for (const enemy of bears) {
+            if (enemy.collidesWith(player)) {
                 gameState = 'dead';
-                deathCause = 'Björnen tog dig!';
+                deathCause = enemy instanceof Yeti ? 'Yetin krossade dig!' : 'Björnen tog dig!';
                 stateTimer = 0;
                 break;
             }
         }
 
+        // Stenras-kollision
+        if (rockfall.checkCollision(player)) {
+            gameState = 'dead';
+            deathCause = 'Stenras!';
+            stateTimer = 0;
+        }
+
+        // Föll för långt
         if (player.y > player.lastGroundY + 500 || player.y > level.groundY + 100) {
             gameState = 'dead';
             deathCause = 'Du föll!';
@@ -125,9 +162,11 @@ function gameLoop() {
     // === RITA ===
     drawBackground(ctx, canvas, cameraY);
     drawLevel(ctx, level, cameraY, canvas.height);
-    for (const bear of bears) bear.draw(ctx, cameraY);
+    rockfall.draw(ctx, cameraY);
+    for (const enemy of bears) enemy.draw(ctx, cameraY);
     player.draw(ctx, cameraY);
-    drawUI(ctx, canvas, player, bearWarning, gameState);
+    rockfall.drawWarning(ctx, canvas);
+    drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     if (gameState === 'dead') drawDeathScreen(ctx, canvas, stateTimer, deathCause, player);
 
     requestAnimationFrame(gameLoop);

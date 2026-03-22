@@ -7,7 +7,7 @@ class Bear {
         this.y = bridgeY - 30;
         this.width = 40;
         this.height = 30;
-        this.speed = 2.8;
+        this.speed = 5.6;
         this.facing = 1;
         this.active = true;
         this.walkFrame = 0;

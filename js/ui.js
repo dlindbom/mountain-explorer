@@ -1,6 +1,6 @@
 // UI: höjdmätare, varningar, dödsanimation, touch-knappar
 
-function drawUI(ctx, canvas, player, bearWarning, gameState) {
+function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
     const height = player.getHeight();
 
     // Höjdpanel
@@ -43,7 +43,7 @@ function drawUI(ctx, canvas, player, bearWarning, gameState) {
         ctx.fill();
         ctx.fillStyle = `rgba(255,255,255,${alpha})`;
         ctx.font = 'bold 32px monospace';
-        ctx.fillText('BJÖRN!', canvas.width / 2, canvas.height / 2 - 8 + shake);
+        ctx.fillText(enemyWarningText || 'BJÖRN!', canvas.width / 2, canvas.height / 2 - 8 + shake);
     }
 
     // Touch-knappar
