@@ -1,90 +1,91 @@
-// Banan - endless bergsvägg med klippkanter och spikar
+// Banan - broar, stegar och spikhål på berget
 
 class Level {
     constructor() {
         this.platforms = [];
+        this.ladders = [];
+        this.spikes = [];
         this.groundY = 560;
-        this.nextY = this.groundY - 70;
-        this.platformCount = 0;
+        this.floorSpacing = 125;
+        this.currentFloor = 0;
+        this.nextFloorY = this.groundY;
 
-        // Startmark
+        // Startmark (bred plattform)
         this.platforms.push({
-            x: 100, y: this.groundY, width: 600, height: 40, type: 'ground'
+            x: 0, y: this.groundY, width: 800, height: 40, type: 'ground'
         });
 
-        // Generera de första plattformarna
-        this.generateUpTo(this.groundY - 800);
+        // Generera de första våningarna
+        this.generateUpTo(this.groundY - 900);
     }
 
-    // Generera nya plattformar uppåt vid behov
     generateUpTo(targetY) {
-        while (this.nextY > targetY) {
-            this.addPlatform(this.nextY);
-            this.platformCount++;
-
-            // Svårighetsgrad ökar med höjden
-            const height = (this.groundY - this.nextY) / 10;
-            const spacing = 60 + Math.random() * 25 + Math.min(height / 50, 15);
-            this.nextY -= spacing;
+        while (this.nextFloorY - this.floorSpacing > targetY) {
+            this.addFloor();
         }
     }
 
-    addPlatform(y) {
-        const height = (this.groundY - y) / 10; // Höjd i meter
-        const difficulty = Math.min(1, height / 500); // 0 till 1 över 500m
+    addFloor() {
+        this.currentFloor++;
+        const y = this.groundY - this.currentFloor * this.floorSpacing;
+        const belowY = this.groundY - (this.currentFloor - 1) * this.floorSpacing;
+        const difficulty = Math.min(1, this.currentFloor / 60);
 
-        // Plattformens bredd (smalare högre upp)
-        const minWidth = Math.max(55, 100 - difficulty * 40);
-        const maxWidth = Math.max(80, 160 - difficulty * 60);
-        const width = minWidth + Math.random() * (maxWidth - minWidth);
+        // Stege: alternerar sida varje våning
+        const ladderSide = this.currentFloor % 2 !== 0 ? 'left' : 'right';
+        const ladderX = ladderSide === 'left' ? 15 : 760;
 
-        // Position: 40% från vänster vägg, 40% höger vägg, 20% mitten
-        const roll = Math.random();
-        let x;
-        if (roll < 0.4) {
-            // Sticker ut från vänster vägg
-            x = 0;
-        } else if (roll < 0.8) {
-            // Sticker ut från höger vägg
-            x = 800 - width;
-        } else {
-            // Flytande sten i mitten
-            x = 100 + Math.random() * (600 - width);
-        }
+        // Stege från våningen under till denna
+        this.ladders.push({
+            x: ladderX,
+            topY: y,
+            bottomY: belowY,
+            width: 24,
+            side: ladderSide
+        });
 
-        const platform = {
-            x: x,
-            y: y,
-            width: width,
-            height: 16,
-            type: 'rock',
-            fromWall: roll < 0.4 ? 'left' : (roll < 0.8 ? 'right' : 'none')
-        };
+        // Bro med eventuellt spikhål
+        const hasGap = this.currentFloor > 3 && Math.random() < 0.2 + difficulty * 0.35;
 
-        // Spikar (chansen ökar med höjden)
-        const spikeChance = 0.1 + difficulty * 0.35;
-        if (this.platformCount > 5 && Math.random() < spikeChance && width > 65) {
-            // Spikhålet ska inte täcka hela plattformen - lämna säker landningsyta
-            const safeZone = 30; // Minst 30px säker yta
-            const maxSpikeWidth = width - safeZone * 2;
-
-            if (maxSpikeWidth > 15) {
-                const spikeWidth = 15 + Math.random() * Math.min(30, maxSpikeWidth - 15);
-                // Placera spikhålet - undvik kanterna
-                const spikeStart = safeZone + Math.random() * (width - safeZone * 2 - spikeWidth);
-                platform.spikeStart = spikeStart;
-                platform.spikeWidth = spikeWidth;
+        if (hasGap) {
+            const gapWidth = Math.min(120, 45 + Math.random() * 25 + difficulty * 40);
+            // Placera hålet i mitten, bort från stegen
+            let gapStart;
+            if (ladderSide === 'left') {
+                gapStart = 200 + Math.random() * (500 - gapWidth);
+            } else {
+                gapStart = 100 + Math.random() * (500 - gapWidth);
             }
+
+            // Vänster segment
+            this.platforms.push({
+                x: 0, y: y, width: gapStart, height: 16, type: 'bridge'
+            });
+            // Höger segment
+            this.platforms.push({
+                x: gapStart + gapWidth, y: y,
+                width: 800 - gapStart - gapWidth, height: 16, type: 'bridge'
+            });
+            // Spikar i hålet
+            this.spikes.push({
+                x: gapStart, y: y, width: gapWidth
+            });
+        } else {
+            // Hel bro
+            this.platforms.push({
+                x: 0, y: y, width: 800, height: 16, type: 'bridge'
+            });
         }
 
-        this.platforms.push(platform);
+        this.nextFloorY = y;
     }
 
-    // Ta bort plattformar långt under spelaren
     cleanup(playerY) {
         this.platforms = this.platforms.filter(p =>
             p.type === 'ground' || p.y < playerY + 800
         );
+        this.ladders = this.ladders.filter(l => l.bottomY < playerY + 800);
+        this.spikes = this.spikes.filter(s => s.y < playerY + 800);
     }
 
     update(playerY) {
@@ -93,124 +94,140 @@ class Level {
     }
 
     draw(ctx, cameraY, canvasHeight) {
-        // Rita klipporna
+        // Rita stegar (bakom broarna)
+        for (const ladder of this.ladders) {
+            this.drawLadder(ctx, ladder, cameraY, canvasHeight);
+        }
+
+        // Rita spikhål
+        for (const spike of this.spikes) {
+            this.drawSpikes(ctx, spike, cameraY, canvasHeight);
+        }
+
+        // Rita broar/plattformar
         for (const p of this.platforms) {
             const sy = p.y - cameraY;
-            if (sy < -40 || sy > canvasHeight + 40) continue;
+            if (sy < -50 || sy > canvasHeight + 50) continue;
 
             if (p.type === 'ground') {
                 this.drawGround(ctx, p, sy);
             } else {
-                this.drawRock(ctx, p, sy);
+                this.drawBridge(ctx, p, sy);
             }
         }
     }
 
     drawGround(ctx, p, sy) {
+        // Stenbotten
         ctx.fillStyle = '#555';
         ctx.fillRect(p.x, sy, p.width, p.height);
-        ctx.fillStyle = '#666';
-        ctx.fillRect(p.x, sy, p.width, 5);
+        ctx.fillStyle = '#5E5E5E';
+        ctx.fillRect(p.x, sy, p.width, 6);
 
-        // Lite grus/sten-textur
-        ctx.fillStyle = '#4a4a4a';
-        for (let i = p.x + 10; i < p.x + p.width; i += 20) {
-            ctx.fillRect(i, sy + 8, 8, 4);
+        // Stenblock-textur
+        ctx.fillStyle = '#4A4A4A';
+        for (let i = p.x + 15; i < p.x + p.width; i += 25) {
+            ctx.fillRect(i, sy + 10, 12, 6);
         }
     }
 
-    drawRock(ctx, p, sy) {
-        // Klippans grundfärg
-        const shade = 85 + Math.sin(p.y * 0.1) * 15;
-        ctx.fillStyle = `rgb(${shade}, ${shade - 5}, ${shade - 10})`;
+    drawBridge(ctx, p, sy) {
+        // Brons undersida (skugga)
+        ctx.fillStyle = '#5A4010';
+        ctx.fillRect(p.x, sy + p.height - 3, p.width, 5);
 
-        // Klippform - lite ojämn
-        ctx.beginPath();
-        if (p.fromWall === 'left') {
-            // Sticker ut från vänster
-            ctx.moveTo(p.x, sy - 2);
-            ctx.lineTo(p.x + p.width - 8, sy);
-            ctx.lineTo(p.x + p.width, sy + 5);
-            ctx.lineTo(p.x + p.width - 3, sy + p.height);
-            ctx.lineTo(p.x, sy + p.height + 2);
-        } else if (p.fromWall === 'right') {
-            // Sticker ut från höger
-            ctx.moveTo(p.x + p.width, sy - 2);
-            ctx.lineTo(p.x + 8, sy);
-            ctx.lineTo(p.x, sy + 5);
-            ctx.lineTo(p.x + 3, sy + p.height);
-            ctx.lineTo(p.x + p.width, sy + p.height + 2);
-        } else {
-            // Fri sten
-            ctx.moveTo(p.x + 4, sy + p.height);
-            ctx.lineTo(p.x, sy + 4);
-            ctx.lineTo(p.x + 6, sy);
-            ctx.lineTo(p.x + p.width - 6, sy);
-            ctx.lineTo(p.x + p.width, sy + 4);
-            ctx.lineTo(p.x + p.width - 4, sy + p.height);
+        // Brons huvudkropp
+        ctx.fillStyle = '#8B6914';
+        ctx.fillRect(p.x, sy, p.width, p.height);
+
+        // Träplankor
+        ctx.fillStyle = '#A07828';
+        for (let px = p.x; px < p.x + p.width; px += 22) {
+            const pw = Math.min(20, p.x + p.width - px);
+            ctx.fillRect(px + 1, sy + 1, pw, p.height - 3);
         }
-        ctx.fill();
 
-        // Highlight på toppen
-        ctx.fillStyle = `rgba(255, 255, 255, 0.1)`;
-        ctx.fillRect(p.x + 6, sy, p.width - 12, 2);
+        // Räcke (tunn linje ovanpå)
+        ctx.fillStyle = '#6B5010';
+        ctx.fillRect(p.x, sy - 2, p.width, 3);
 
-        // Skugga under
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-        ctx.fillRect(p.x + 4, sy + p.height - 3, p.width - 8, 3);
-
-        // Stenstruktur (sprickor)
-        ctx.strokeStyle = `rgba(0, 0, 0, 0.15)`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(p.x + p.width * 0.3, sy + 3);
-        ctx.lineTo(p.x + p.width * 0.35, sy + p.height - 2);
-        ctx.moveTo(p.x + p.width * 0.7, sy + 2);
-        ctx.lineTo(p.x + p.width * 0.65, sy + p.height - 3);
-        ctx.stroke();
-
-        // Rita spikar om det finns
-        if (p.spikeStart !== undefined) {
-            this.drawSpikes(ctx, p, sy);
+        // Stödpelare under (var 120px)
+        ctx.fillStyle = '#6B5010';
+        for (let px = p.x + 60; px < p.x + p.width - 30; px += 120) {
+            ctx.fillRect(px, sy + p.height, 6, 20);
         }
     }
 
-    drawSpikes(ctx, p, sy) {
-        const holeX = p.x + p.spikeStart;
-        const holeW = p.spikeWidth;
+    drawLadder(ctx, ladder, cameraY, canvasHeight) {
+        const topSy = ladder.topY - cameraY;
+        const bottomSy = ladder.bottomY - cameraY;
 
-        // Mörkt hål i klippan
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.fillRect(holeX, sy + 1, holeW, p.height - 1);
+        // Synlig?
+        if (topSy > canvasHeight + 50 || bottomSy < -50) return;
 
-        // Spikar (trianglar som pekar uppåt)
-        const spikeCount = Math.max(2, Math.floor(holeW / 10));
-        const spikeSpacing = holeW / spikeCount;
+        const height = bottomSy - topSy;
+        const lx = ladder.x;
+        const lw = ladder.width;
 
-        ctx.fillStyle = '#8A8A8A';
-        for (let i = 0; i < spikeCount; i++) {
-            const sx = holeX + i * spikeSpacing + spikeSpacing * 0.1;
-            const sw = spikeSpacing * 0.8;
-            const spikeH = p.height - 3;
+        // Sidorails
+        ctx.fillStyle = '#A07828';
+        ctx.fillRect(lx, topSy, 4, height);
+        ctx.fillRect(lx + lw - 4, topSy, 4, height);
 
+        // Stegpinnar
+        ctx.fillStyle = '#8B6914';
+        const rungSpacing = 18;
+        for (let ry = topSy + 12; ry < bottomSy - 5; ry += rungSpacing) {
+            ctx.fillRect(lx + 4, ry, lw - 8, 4);
+
+            // Skugga under pinnen
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.fillRect(lx + 4, ry + 4, lw - 8, 2);
+            ctx.fillStyle = '#8B6914';
+        }
+
+        // Highlight på rails
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(lx + 1, topSy, 1, height);
+        ctx.fillRect(lx + lw - 3, topSy, 1, height);
+    }
+
+    drawSpikes(ctx, spike, cameraY, canvasHeight) {
+        const sy = spike.y - cameraY;
+        if (sy < -50 || sy > canvasHeight + 50) return;
+
+        // Mörkt hål
+        ctx.fillStyle = 'rgba(10, 5, 0, 0.85)';
+        ctx.fillRect(spike.x, sy, spike.width, 35);
+
+        // Spiktrianglar (pekar uppåt)
+        const count = Math.max(2, Math.floor(spike.width / 14));
+        const spacing = spike.width / count;
+
+        for (let i = 0; i < count; i++) {
+            const sx = spike.x + i * spacing + 2;
+            const sw = spacing - 4;
+
+            // Metallgrå spik
+            ctx.fillStyle = '#707070';
             ctx.beginPath();
-            ctx.moveTo(sx, sy + p.height);
-            ctx.lineTo(sx + sw / 2, sy + p.height - spikeH);
-            ctx.lineTo(sx + sw, sy + p.height);
+            ctx.moveTo(sx, sy + 32);
+            ctx.lineTo(sx + sw / 2, sy + 10);
+            ctx.lineTo(sx + sw, sy + 32);
+            ctx.fill();
+
+            // Röd/rostig spets
+            ctx.fillStyle = '#904040';
+            ctx.beginPath();
+            ctx.moveTo(sx + sw / 2 - 3, sy + 16);
+            ctx.lineTo(sx + sw / 2, sy + 10);
+            ctx.lineTo(sx + sw / 2 + 3, sy + 16);
             ctx.fill();
         }
 
-        // Röd/rostfärgad topp på spikarna
-        ctx.fillStyle = '#A04040';
-        for (let i = 0; i < spikeCount; i++) {
-            const sx = holeX + i * spikeSpacing + spikeSpacing * 0.1;
-            const sw = spikeSpacing * 0.8;
-
-            ctx.beginPath();
-            ctx.moveTo(sx + sw * 0.25, sy + p.height - 6);
-            ctx.lineTo(sx + sw / 2, sy + p.height - (p.height - 3));
-            ctx.lineTo(sx + sw * 0.75, sy + p.height - 6);
-            ctx.fill();
-        }
+        // Kantskuggor vid hålets kanter
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(spike.x, sy, 3, 35);
+        ctx.fillRect(spike.x + spike.width - 3, sy, 3, 35);
     }
 }
