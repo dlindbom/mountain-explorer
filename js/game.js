@@ -37,6 +37,13 @@ let selectedCharacter = null;
 let savedMaxHeight = 0;
 let gotNewRecord = false;
 
+// Örn-system
+let eagles = [];
+let playerIdleFrames = 0;
+let lastPlayerX = 0;
+let lastPlayerY = 0;
+const IDLE_THRESHOLD = 120; // 2 sekunder vid 60fps
+
 // Koppla input
 setupInput(canvas, () => gameState, () => stateTimer, restartGame);
 
@@ -76,10 +83,14 @@ function startGame(characterId) {
     player = new Player(380, level.groundY - 32, characterId);
     player.maxHeight = savedMaxHeight;
     bears = [];
+    eagles = [];
     rockfall.reset();
     nextBearHeight = 100;
     nextYetiHeight = 200;
     bearWarning = 0;
+    playerIdleFrames = 0;
+    lastPlayerX = 0;
+    lastPlayerY = 0;
     cameraY = 0;
     gameState = 'playing';
     stateTimer = 0;
@@ -153,6 +164,43 @@ function spawnEnemy(type) {
     bears.push(enemy);
 }
 
+// Örn-system: spawnar om spelaren står stilla
+function updateEagles() {
+    const px = player.x;
+    const py = player.y;
+
+    // Kolla om spelaren rör sig (mer än 2px per frame)
+    const moved = Math.abs(px - lastPlayerX) > 2 || Math.abs(py - lastPlayerY) > 2;
+    lastPlayerX = px;
+    lastPlayerY = py;
+
+    if (moved || player.climbing) {
+        playerIdleFrames = 0;
+    } else {
+        playerIdleFrames++;
+    }
+
+    // Spawna örn efter 2 sekunders stillastående
+    if (playerIdleFrames === IDLE_THRESHOLD) {
+        eagles.push(new Eagle(px + player.width / 2, py + player.height / 2));
+        bearWarning = 80;
+        enemyWarningText = 'ÖRN!';
+    }
+
+    // Spawna ny örn var 90:e frame om fortfarande stilla
+    if (playerIdleFrames > IDLE_THRESHOLD && (playerIdleFrames - IDLE_THRESHOLD) % 90 === 0) {
+        eagles.push(new Eagle(px + player.width / 2, py + player.height / 2));
+    }
+
+    // Uppdatera alla örnar
+    for (const eagle of eagles) {
+        eagle.update(px + player.width / 2, py + player.height / 2);
+    }
+
+    // Rensa inaktiva örnar
+    eagles = eagles.filter(e => e.active);
+}
+
 // Huvudloop
 function gameLoop() {
     // === KARAKTÄRSVAL ===
@@ -167,6 +215,7 @@ function gameLoop() {
         player.update(keys, level.platforms, level.ladders);
         level.update(player.y);
         updateEnemies();
+        updateEagles();
         rockfall.update(player.y, player.getHeight(), level.groundY);
 
         // Spikar = instant death
@@ -175,18 +224,25 @@ function gameLoop() {
             deathCause = 'Spikar!';
         }
 
-        // Fiende-kollision
+        // Fiende-kollision (björnar/yetis)
         for (const enemy of bears) {
             if (enemy.collidesWith(player)) {
                 if (enemy instanceof Yeti) {
-                    // Yeti = instant death
                     player.takeDamage(player.maxHealth);
                     deathCause = 'Yetin krossade dig!';
                 } else {
-                    // Björn = 50 skada per sekund (≈0.83/frame vid 60fps)
                     player.takeDamage(50 / 60);
                     if (player.isDead()) deathCause = 'Björnen tog dig!';
                 }
+            }
+        }
+
+        // Örn-kollision = 40 skada
+        for (const eagle of eagles) {
+            if (eagle.collidesWith(player)) {
+                player.takeDamage(40);
+                eagle.active = false;
+                if (player.isDead()) deathCause = 'Örnen tog dig!';
             }
         }
 
@@ -228,6 +284,7 @@ function gameLoop() {
     drawLevel(ctx, level, cameraY, canvas.height);
     rockfall.draw(ctx, cameraY);
     for (const enemy of bears) enemy.draw(ctx, cameraY);
+    for (const eagle of eagles) eagle.draw(ctx, cameraY);
     player.draw(ctx, cameraY);
     rockfall.drawWarning(ctx, canvas);
     drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
