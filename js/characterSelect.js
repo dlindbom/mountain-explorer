@@ -1,6 +1,25 @@
-// Karaktärsval-skärm med ekonomi
+// Karaktärsval-skärm med karusell (3 kort synliga åt gången)
 
-const ALL_CHARACTER_IDS = ['alfred', 'astrid', 'pappa', 'jeff', 'alvis', 'bob', 'mamma', 'alice'];
+// Ordning: Astrid, Alfred, Alice först — resten bläddras fram
+const ALL_CHARACTER_IDS = ['astrid', 'alfred', 'alice', 'pappa', 'mamma', 'jeff', 'alvis', 'bob'];
+
+// Karusell-state
+let charSelectStartIndex = 0;
+const VISIBLE_CARDS = 3;
+
+// Layout-konstanter
+const CARD_W = 200;
+const CARD_H = 380;
+const CARD_GAP = 20;
+const CARD_Y = 115;
+const CARDS_TOTAL_W = CARD_W * VISIBLE_CARDS + CARD_GAP * (VISIBLE_CARDS - 1);
+const CARDS_START_X = (800 - CARDS_TOTAL_W) / 2;
+
+// Pilknappar
+const ARROW_SIZE = 44;
+const ARROW_Y = CARD_Y + CARD_H / 2 - ARROW_SIZE / 2;
+const ARROW_LEFT_X = CARDS_START_X - ARROW_SIZE - 14;
+const ARROW_RIGHT_X = CARDS_START_X + CARDS_TOTAL_W + 14;
 
 function drawCharacterSelect(ctx, canvas) {
     // Bakgrund
@@ -40,21 +59,40 @@ function drawCharacterSelect(ctx, canvas) {
     ctx.fillStyle = '#AAA';
     ctx.fillText(`🏔 Rekord: ${economy.bestHeight} m`, canvas.width / 2 + 70, 98);
 
-    // Kort
+    // Rita 3 synliga kort
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : count <= 6 ? 122 : count <= 8 ? 92 : 80;
-    const cardH = 360;
-    const cardY = 118;
-    const gap = 12;
-    const totalW = cardW * count + gap * (count - 1);
-    const startX = (canvas.width - totalW) / 2;
-
-    for (let i = 0; i < count; i++) {
-        const id = ALL_CHARACTER_IDS[i];
+    for (let i = 0; i < VISIBLE_CARDS; i++) {
+        const charIndex = charSelectStartIndex + i;
+        if (charIndex >= count) break;
+        const id = ALL_CHARACTER_IDS[charIndex];
         const char = CHARACTERS[id];
-        const x = startX + i * (cardW + gap);
+        const x = CARDS_START_X + i * (CARD_W + CARD_GAP);
         const unlocked = economy.isUnlocked(id);
-        drawCharacterCard(ctx, x, cardY, cardW, cardH, char, id, String(i + 1), unlocked);
+        drawCharacterCard(ctx, x, CARD_Y, CARD_W, CARD_H, char, id, unlocked);
+    }
+
+    // Vänsterpil
+    if (charSelectStartIndex > 0) {
+        drawArrowButton(ctx, ARROW_LEFT_X, ARROW_Y, ARROW_SIZE, 'left');
+    }
+
+    // Högerpil
+    if (charSelectStartIndex + VISIBLE_CARDS < count) {
+        drawArrowButton(ctx, ARROW_RIGHT_X, ARROW_Y, ARROW_SIZE, 'right');
+    }
+
+    // Sidindikator (prickar)
+    const totalPages = count - VISIBLE_CARDS + 1;
+    const dotY = CARD_Y + CARD_H + 18;
+    const dotR = 4;
+    const dotGap = 14;
+    const dotsW = totalPages * dotGap;
+    const dotsStartX = canvas.width / 2 - dotsW / 2 + dotGap / 2;
+    for (let i = 0; i < totalPages; i++) {
+        ctx.beginPath();
+        ctx.arc(dotsStartX + i * dotGap, dotY, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = i === charSelectStartIndex ? '#FFF' : 'rgba(255,255,255,0.25)';
+        ctx.fill();
     }
 
     // Instruktioner
@@ -63,96 +101,110 @@ function drawCharacterSelect(ctx, canvas) {
     if (isTouchDevice) {
         ctx.fillText('Tryck på en karaktär för att börja', canvas.width / 2, canvas.height - 15);
     } else {
-        ctx.fillText('Klicka eller tryck 1-' + count, canvas.width / 2, canvas.height - 15);
+        ctx.fillText('Klicka på en karaktär eller använd pilarna', canvas.width / 2, canvas.height - 15);
     }
 }
 
-function drawCharacterCard(ctx, x, y, w, h, char, id, keyNum, unlocked) {
+function drawArrowButton(ctx, x, y, size, direction) {
+    // Bakgrund
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    roundRect(ctx, x, y, size, size, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, size, size, 10);
+    ctx.stroke();
+
+    // Pil
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 22px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(direction === 'left' ? '◀' : '▶', x + size / 2, y + size / 2);
+    ctx.textBaseline = 'alphabetic';
+}
+
+function drawCharacterCard(ctx, x, y, w, h, char, id, unlocked) {
     // Kortbakgrund
     ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)';
-    roundRect(ctx, x, y, w, h, 10);
+    roundRect(ctx, x, y, w, h, 12);
     ctx.fill();
 
-    ctx.strokeStyle = unlocked ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = unlocked ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
     ctx.lineWidth = 2;
-    roundRect(ctx, x, y, w, h, 10);
+    roundRect(ctx, x, y, w, h, 12);
     ctx.stroke();
 
     // Namn
     ctx.fillStyle = unlocked ? '#FFF' : 'rgba(255,255,255,0.4)';
-    ctx.font = 'bold 18px monospace';
+    ctx.font = 'bold 22px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(char.name, x + w / 2, y + 28);
+    ctx.fillText(char.name, x + w / 2, y + 32);
 
-    // Karaktär-preview
+    // Karaktär-preview (större nu)
     if (unlocked) {
-        const previewScale = (char.scale || 1) > 1 ? 1.8 : 1.6;
+        const previewScale = (char.scale || 1) > 1 ? 2.4 : 2.2;
         const previewX = x + w / 2 - 12 * previewScale;
-        const previewY = y + 38;
+        const previewY = y + 50;
         drawCharacterPreview(ctx, previewX, previewY, char, previewScale, id);
     } else {
         // Låst — silhuett
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.font = 'bold 50px monospace';
-        ctx.fillText('🔒', x + w / 2, y + 120);
+        ctx.font = 'bold 60px monospace';
+        ctx.fillText('🔒', x + w / 2, y + 140);
     }
 
     // Beskrivning
-    const descY = y + 200;
+    const descY = y + 210;
     ctx.fillStyle = unlocked ? char.jacket : 'rgba(255,255,255,0.3)';
-    ctx.font = 'bold 11px monospace';
+    ctx.font = 'bold 13px monospace';
     ctx.fillText(char.desc, x + w / 2, descY);
 
     // Stats
-    ctx.font = '10px monospace';
+    ctx.font = '12px monospace';
     ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)';
 
     const jumpPct = Math.round(Math.abs(char.jumpForce) / 10.5 * 100);
     const speedPct = Math.round(char.speed / 4.5 * 100);
     const hpPct = Math.round((char.maxHealth || 100) / 100 * 100);
 
-    const bar = (pct) => pct > 100 ? '██████████' : '██████░░░░';
+    const bar = (pct) => {
+        const filled = Math.round(pct / 10);
+        const empty = 10 - Math.min(filled, 10);
+        return '█'.repeat(Math.min(filled, 10)) + '░'.repeat(empty);
+    };
 
     const coinMult = char.coinMultiplier || 1;
 
-    ctx.fillText(`⬆ ${bar(jumpPct)} ${jumpPct}%`, x + w / 2, descY + 20);
-    ctx.fillText(`➡ ${bar(speedPct)} ${speedPct}%`, x + w / 2, descY + 33);
-    ctx.fillText(`♥ ${bar(hpPct)} ${hpPct}%`, x + w / 2, descY + 46);
+    ctx.fillText(`⬆ ${bar(jumpPct)} ${jumpPct}%`, x + w / 2, descY + 24);
+    ctx.fillText(`➡ ${bar(speedPct)} ${speedPct}%`, x + w / 2, descY + 40);
+    ctx.fillText(`♥ ${bar(hpPct)} ${hpPct}%`, x + w / 2, descY + 56);
     if (coinMult > 1) {
         ctx.fillStyle = unlocked ? '#FFD700' : 'rgba(255,215,0,0.3)';
-        ctx.fillText(`💰 x${coinMult} PENGAR`, x + w / 2, descY + 59);
+        ctx.fillText(`💰 x${coinMult} PENGAR`, x + w / 2, descY + 72);
         ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)';
     }
 
     if ((char.scale || 1) > 1) {
-        ctx.fillText(`📏 ${Math.round(char.scale * 100)}%`, x + w / 2, descY + 67);
+        ctx.fillText(`📏 ${Math.round(char.scale * 100)}%`, x + w / 2, descY + (coinMult > 1 ? 88 : 72));
     }
 
     // Pris / köp-knapp för låsta karaktärer
     if (!unlocked && char.cost) {
         const canBuy = economy.canAfford(id);
-        const btnY = y + h - 45;
+        const btnY = y + h - 55;
 
         ctx.fillStyle = canBuy ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255,255,255,0.05)';
-        roundRect(ctx, x + 15, btnY, w - 30, 28, 6);
+        roundRect(ctx, x + 25, btnY, w - 50, 32, 8);
         ctx.fill();
         ctx.strokeStyle = canBuy ? 'rgba(255, 215, 0, 0.5)' : 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 1;
-        roundRect(ctx, x + 15, btnY, w - 30, 28, 6);
+        roundRect(ctx, x + 25, btnY, w - 50, 32, 8);
         ctx.stroke();
 
         ctx.fillStyle = canBuy ? '#FFD700' : 'rgba(255,255,255,0.3)';
-        ctx.font = 'bold 12px monospace';
-        ctx.fillText(`KÖP ${char.cost} kr`, x + w / 2, btnY + 18);
-    }
-
-    // Tangent
-    if (unlocked) {
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
-        ctx.font = '10px monospace';
-        if (!isTouchDevice) {
-            ctx.fillText('Tryck ' + keyNum, x + w / 2, y + h - 10);
-        }
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText(`KÖP ${char.cost} kr`, x + w / 2, btnY + 21);
     }
 }
 
@@ -201,22 +253,35 @@ function drawCharacterPreview(ctx, x, y, char, s, id) {
     }
 }
 
-// Kolla om ett klick/touch träffar ett kort (eller köp-knapp)
+// Hantera klick/touch på karaktärsval-skärmen
 function getSelectedCharacter(canvasX, canvasY) {
     const count = ALL_CHARACTER_IDS.length;
-    const cardW = count <= 4 ? 175 : count <= 5 ? 148 : count <= 6 ? 122 : count <= 8 ? 92 : 80;
-    const cardH = 360;
-    const cardY = 118;
-    const gap = 12;
-    const totalW = cardW * count + gap * (count - 1);
-    const startX = (800 - totalW) / 2;
 
-    for (let i = 0; i < count; i++) {
-        const x = startX + i * (cardW + gap);
-        if (canvasX >= x && canvasX <= x + cardW &&
-            canvasY >= cardY && canvasY <= cardY + cardH) {
+    // Kolla vänsterpil
+    if (charSelectStartIndex > 0 &&
+        canvasX >= ARROW_LEFT_X && canvasX <= ARROW_LEFT_X + ARROW_SIZE &&
+        canvasY >= ARROW_Y && canvasY <= ARROW_Y + ARROW_SIZE) {
+        charSelectStartIndex--;
+        return null; // Navigerade, inget val
+    }
 
-            const id = ALL_CHARACTER_IDS[i];
+    // Kolla högerpil
+    if (charSelectStartIndex + VISIBLE_CARDS < count &&
+        canvasX >= ARROW_RIGHT_X && canvasX <= ARROW_RIGHT_X + ARROW_SIZE &&
+        canvasY >= ARROW_Y && canvasY <= ARROW_Y + ARROW_SIZE) {
+        charSelectStartIndex++;
+        return null; // Navigerade, inget val
+    }
+
+    // Kolla kort
+    for (let i = 0; i < VISIBLE_CARDS; i++) {
+        const charIndex = charSelectStartIndex + i;
+        if (charIndex >= count) break;
+        const x = CARDS_START_X + i * (CARD_W + CARD_GAP);
+        if (canvasX >= x && canvasX <= x + CARD_W &&
+            canvasY >= CARD_Y && canvasY <= CARD_Y + CARD_H) {
+
+            const id = ALL_CHARACTER_IDS[charIndex];
 
             if (economy.isUnlocked(id)) {
                 return id; // Välj karaktären
