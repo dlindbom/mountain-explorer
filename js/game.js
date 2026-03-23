@@ -89,6 +89,8 @@ canvas.addEventListener('touchend', (e) => {
         gameState = 'levelselect';
     } else if (gameState === 'introCutscene' && introCutscene && introCutscene.canSkip) {
         gameState = 'playing';
+    } else if (gameState === 'cutscene' && deathCutscene && deathCutscene.canRestart) {
+        restartGame();
     }
 });
 
@@ -135,8 +137,10 @@ function restartGame() {
         return;
     }
     savedMaxHeight = player ? player.maxHeight : 0;
+    deathType = '';
+    deathCause = '';
+    deathCutscene = null;
     // Hoppa över intro vid restart — gå direkt till spelet
-    selectedCharacter = selectedCharacter;
     level = new Level();
     player = new Player(380, level.groundY - 32, selectedCharacter);
     player.maxHeight = savedMaxHeight;
@@ -305,7 +309,7 @@ function gameLoop() {
             if (introCutscene.done) {
                 gameState = 'playing';
             }
-            if (introCutscene.canSkip && (keys[' '] || keys['Escape'])) {
+            if (introCutscene.canSkip && (keys[' '] || keys['Escape'] || keys['ArrowUp'])) {
                 gameState = 'playing';
             }
         }
@@ -425,7 +429,7 @@ function gameLoop() {
         if (deathCutscene) {
             deathCutscene.update();
             if (deathCutscene.canRestart) {
-                if (keys[' ']) restartGame();
+                if (keys[' '] || keys['ArrowUp']) restartGame();
                 if (keys['Escape']) goToCharacterSelect();
             }
         }
@@ -433,7 +437,7 @@ function gameLoop() {
         if (victoryCutscene) {
             victoryCutscene.update();
             if (victoryCutscene.canContinue) {
-                if (keys[' '] || keys['Escape']) {
+                if (keys[' '] || keys['Escape'] || keys['ArrowUp']) {
                     gameState = 'levelselect';
                 }
             }

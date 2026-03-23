@@ -35,7 +35,7 @@ class IntroCutscene {
     draw(ctx, canvas) {
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
-        const t = Math.min(1, this.frame / 60); // Fade-in 0→1
+        const fade = Math.min(1, this.frame / 60); // Fade-in 0→1
 
         // Bakgrund: mörk himmel → gryning
         const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -47,7 +47,7 @@ class IntroCutscene {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Stjärnor (fadear ut med gryningen)
-        const starAlpha = Math.max(0, 1 - dawnProgress * 1.5) * t;
+        const starAlpha = Math.max(0, 1 - dawnProgress * 1.5) * fade;
         for (const star of this.stars) {
             const twinkle = 0.5 + Math.sin(star.twinkle + this.frame * 0.03) * 0.5;
             ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha * twinkle})`;
@@ -61,7 +61,7 @@ class IntroCutscene {
         const mountainHeight = (baseY - peakY) * mountainRise;
 
         // Bakgrundsbergen
-        ctx.fillStyle = `rgba(40, 50, 65, ${t * 0.8})`;
+        ctx.fillStyle = `rgba(40, 50, 65, ${fade * 0.8})`;
         ctx.beginPath();
         ctx.moveTo(0, baseY);
         ctx.lineTo(80, baseY - mountainHeight * 0.5);
@@ -79,7 +79,7 @@ class IntroCutscene {
         ctx.fill();
 
         // Huvudberget (centrerat, störst)
-        ctx.fillStyle = `rgba(55, 65, 80, ${t})`;
+        ctx.fillStyle = `rgba(55, 65, 80, ${fade})`;
         ctx.beginPath();
         ctx.moveTo(150, baseY);
         ctx.lineTo(250, baseY - mountainHeight * 0.6);
@@ -92,7 +92,7 @@ class IntroCutscene {
 
         // Snötäckt topp
         if (mountainRise > 0.7) {
-            const snowAlpha = Math.min(1, (mountainRise - 0.7) / 0.3) * t;
+            const snowAlpha = Math.min(1, (mountainRise - 0.7) / 0.3) * fade;
             ctx.fillStyle = `rgba(220, 235, 245, ${snowAlpha})`;
             ctx.beginPath();
             ctx.moveTo(cx - 60, baseY - mountainHeight * 0.88);
