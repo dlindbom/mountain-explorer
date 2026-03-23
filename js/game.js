@@ -376,7 +376,8 @@ function gameLoop() {
                     bearWarning = 60;
                     enemyWarningText = t('warn_smack');
                 } else if (enemy instanceof Yeti) {
-                    player.takeDamage(player.maxHealth * 0.75);
+                    player.takeDamage(100);
+                    enemy.active = false;
                     if (player.isDead()) {
                         deathType = 'yeti';
                         deathCause = t('death_yeti');
