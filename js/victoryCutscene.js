@@ -42,21 +42,21 @@ class VictoryCutscene {
     draw(ctx, canvas) {
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
-        const t = Math.min(1, this.frame / 60); // Fade in 0→1
+        const fade = Math.min(1, this.frame / 60); // Fade in 0→1
 
         // Mörk bakgrund med grön ton
         ctx.fillStyle = 'rgba(10, 30, 20, 0.9)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Stjärnhimmel
-        ctx.fillStyle = `rgba(255, 255, 255, ${t * 0.6})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${fade * 0.6})`;
         for (let i = 0; i < 30; i++) {
             ctx.fillRect((i * 97 + 30) % 780 + 10, (i * 61 + 20) % 250 + 10, 1 + i % 2, 1 + i % 2);
         }
 
         // Berg-silhuett
         const mountainY = cy + 40;
-        ctx.fillStyle = `rgba(60, 70, 80, ${t})`;
+        ctx.fillStyle = `rgba(60, 70, 80, ${fade})`;
         ctx.beginPath();
         ctx.moveTo(100, canvas.height);
         ctx.lineTo(100, mountainY + 80);
@@ -71,7 +71,7 @@ class VictoryCutscene {
         ctx.fill();
 
         // Snötäckt topp
-        ctx.fillStyle = `rgba(220, 230, 240, ${t})`;
+        ctx.fillStyle = `rgba(220, 230, 240, ${fade})`;
         ctx.beginPath();
         ctx.moveTo(cx - 80, mountainY - 50);
         ctx.lineTo(cx - 30, mountainY - 85);
@@ -83,12 +83,12 @@ class VictoryCutscene {
         // Flaggstång på toppen
         const flagPoleX = cx;
         const flagPoleY = mountainY - 100;
-        ctx.fillStyle = `rgba(139, 69, 19, ${t})`;
+        ctx.fillStyle = `rgba(139, 69, 19, ${fade})`;
         ctx.fillRect(flagPoleX - 1, flagPoleY - 55, 3, 55);
 
         // Flagga (vajar)
         const wave = Math.sin(this.frame * 0.05) * 3;
-        ctx.fillStyle = `rgba(230, 57, 70, ${t})`;
+        ctx.fillStyle = `rgba(230, 57, 70, ${fade})`;
         ctx.beginPath();
         ctx.moveTo(flagPoleX + 2, flagPoleY - 55);
         ctx.lineTo(flagPoleX + 35, flagPoleY - 45 + wave);
@@ -96,16 +96,16 @@ class VictoryCutscene {
         ctx.fill();
 
         // Liten gubbe på toppen
-        if (t > 0.3) {
-            const playerAlpha = Math.min(1, (t - 0.3) / 0.3);
+        if (fade > 0.3) {
+            const playerAlpha = Math.min(1, (fade - 0.3) / 0.3);
             ctx.globalAlpha = playerAlpha;
             this.drawMiniPlayer(ctx, flagPoleX - 15, flagPoleY - 10);
             ctx.globalAlpha = 1;
         }
 
         // Grattis-text
-        if (t > 0.5) {
-            const textAlpha = Math.min(1, (t - 0.5) / 0.3);
+        if (fade > 0.5) {
+            const textAlpha = Math.min(1, (fade - 0.5) / 0.3);
             ctx.globalAlpha = textAlpha;
 
             ctx.fillStyle = '#FFD700';
