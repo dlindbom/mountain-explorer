@@ -354,7 +354,7 @@ class PowerupManager {
             player.hasWarmJacket = true;
         } else if (item.type === 'medkit') {
             // Återställ 50 HP
-            player.health = Math.min(player.maxHealth, player.health + 50);
+            player.health = Math.min(player.maxHealth, player.health + 100);
         }
 
         // Pickup-partiklar

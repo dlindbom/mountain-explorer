@@ -31,7 +31,7 @@ const CHARACTERS = {
         jumpForce: -10.5,
         climbSpeed: 3,
         scale: 1.5,       // 50% större
-        maxHealth: 150,    // 50% mer hälsa
+        maxHealth: 300,    // 50% mer hälsa (bas 200)
         jacket: '#5A5A5A',   // Grå jacka
         pants: '#3A3A3A',
         hat: '#8B0000',      // Mörkröd mössa
@@ -55,7 +55,7 @@ const CHARACTERS = {
         speed: 3.15,          // 10% långsammare
         jumpForce: -12.29,    // 10% lägre hopp
         climbSpeed: 2.5,
-        maxHealth: 110,
+        maxHealth: 220,
         coinMultiplier: 2,
         scale: 0.5,           // Hälften så stor
         cost: 100,
@@ -70,7 +70,7 @@ const CHARACTERS = {
         speed: 4.5,
         jumpForce: -15.57,    // 10% lägre (-17.3 * 0.9)
         climbSpeed: 3,
-        maxHealth: 75,        // 25% mindre
+        maxHealth: 150,       // 25% mindre (bas 200)
         cost: 700,
         jacket: '#1E90FF',
         pants: '#2F4F4F',
@@ -135,7 +135,7 @@ class Player {
         this.lastGroundY = y;
 
         // Hälsa
-        this.maxHealth = char.maxHealth || 100;
+        this.maxHealth = char.maxHealth || 200;
         this.health = this.maxHealth;
 
         // Powerups
