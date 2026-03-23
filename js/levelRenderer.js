@@ -23,7 +23,13 @@ function drawLevel(ctx, level, cameraY, canvasHeight) {
         else if (p.type === 'bridge') drawBridge(ctx, p, sy);
         else drawLedgeSurface(ctx, p, sy);
 
-        if (p.lavaStart !== undefined) drawLava(ctx, p, sy);
+        if (p.lavaStart !== undefined) {
+            if (p.lavaExtinguished) {
+                drawExtinguishedLava(ctx, p, sy);
+            } else {
+                drawLava(ctx, p, sy);
+            }
+        }
     }
 }
 
@@ -259,6 +265,43 @@ function drawLava(ctx, p, sy) {
     ctx.fillStyle = 'rgba(100, 20, 0, 0.6)';
     ctx.fillRect(lavaX, sy - 2, 2, 3);
     ctx.fillRect(lavaX + lw - 2, sy - 2, 2, 3);
+}
+
+// Släckt lava — stelnad sten med ångmoln
+function drawExtinguishedLava(ctx, p, sy) {
+    const ls = p.lavaCurrentStart !== undefined ? p.lavaCurrentStart : p.lavaStart;
+    const lw = p.lavaCurrentWidth !== undefined ? p.lavaCurrentWidth : p.lavaWidth;
+    const lavaX = p.x + ls;
+    const lavaH = 8;
+
+    // Stelnad sten (mörk, ojämn yta)
+    ctx.fillStyle = '#3A3A3A';
+    ctx.beginPath();
+    ctx.moveTo(lavaX, sy);
+    for (let x = 0; x <= lw; x += 6) {
+        const bump = Math.sin(x * 0.4) * 1.5 + Math.sin(x * 0.7) * 1;
+        ctx.lineTo(lavaX + x, sy - lavaH + 3 - bump);
+    }
+    ctx.lineTo(lavaX + lw, sy);
+    ctx.fill();
+
+    // Ljusare stenfläckar
+    ctx.fillStyle = '#555';
+    for (let i = 0; i < Math.max(1, Math.floor(lw / 25)); i++) {
+        const sx = lavaX + 5 + (i * 23 % (lw - 10));
+        ctx.fillRect(sx, sy - lavaH + 2, 6, 3);
+    }
+
+    // Lite ånga ovanpå (subtilt)
+    const time = Date.now() * 0.001;
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.15)';
+    for (let i = 0; i < 2; i++) {
+        const sx = lavaX + lw * 0.3 + i * lw * 0.4;
+        const steamY = sy - lavaH - 4 - Math.sin(time + i * 2) * 3;
+        ctx.beginPath();
+        ctx.arc(sx, steamY, 4 + Math.sin(time * 1.5 + i) * 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
 // === STEGAR ===

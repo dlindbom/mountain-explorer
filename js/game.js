@@ -332,12 +332,15 @@ function gameLoop() {
             victoryCutscene = new VictoryCutscene(mountain, player.colors);
         }
 
-        // Lava = 40 skada (vattenhink skyddar)
+        // Lava = 30 skada (vattenhink släcker lavan permanent)
         if (player.inLava) {
-            if (player.hasWaterBucket) {
-                player.hasWaterBucket = false; // Förbruka hinken
+            if (player.hasWaterBucket && player.lavaPlatform) {
+                // Släck lavan — förvandla till sten
+                player.lavaPlatform.lavaExtinguished = true;
+                player.hasWaterBucket = false;
+                player.inLava = false;
             } else {
-                player.takeDamage(40);
+                player.takeDamage(30);
                 if (player.isDead()) {
                     deathType = 'lava';
                     deathCause = t('death_lava');

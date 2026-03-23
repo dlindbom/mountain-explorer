@@ -165,6 +165,7 @@ class Player {
         this.vy = 0;
         this.onGround = false;
         this.inLava = false;
+        this.lavaPlatform = null;
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
         this.hasBat = this.permanentBat;
@@ -177,6 +178,7 @@ class Player {
 
     update(keys, platforms, ladders) {
         this.inLava = false;
+        this.lavaPlatform = null;
 
         if (this.climbing) {
             this.updateClimbing(keys, ladders);
@@ -319,13 +321,14 @@ class Player {
                 this.lastGroundY = this.y;
 
                 // Kolla om vi landade i lava (använd aktuell storlek)
-                if (p.lavaStart !== undefined) {
+                if (p.lavaStart !== undefined && !p.lavaExtinguished) {
                     const ls = p.lavaCurrentStart !== undefined ? p.lavaCurrentStart : p.lavaStart;
                     const lw = p.lavaCurrentWidth !== undefined ? p.lavaCurrentWidth : p.lavaWidth;
                     const lavaLeft = p.x + ls;
                     const lavaRight = lavaLeft + lw;
                     if (this.x + this.width - 2 > lavaLeft && this.x + 2 < lavaRight) {
                         this.inLava = true;
+                        this.lavaPlatform = p;
                     }
                 }
 
