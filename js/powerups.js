@@ -325,9 +325,14 @@ class PowerupManager {
 
         if (!bestPlatform) return;
 
-        // Slumpa typ
-        const types = ['rocketboots', 'medkit', 'bat', 'gold', 'waterbucket', 'warmjacket'];
-        const type = types[Math.floor(Math.random() * types.length)];
+        // Slumpa typ — guld är mer sällsynt (15% chans)
+        let type;
+        if (Math.random() < 0.15) {
+            type = 'gold';
+        } else {
+            const types = ['rocketboots', 'medkit', 'bat', 'waterbucket', 'warmjacket'];
+            type = types[Math.floor(Math.random() * types.length)];
+        }
         const px = bestPlatform.x + 30 + Math.random() * (bestPlatform.width - 60);
         const py = bestPlatform.y - 22;
 
@@ -341,7 +346,7 @@ class PowerupManager {
             this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
             player.hasBat = true;
         } else if (item.type === 'gold') {
-            economy.coins += 10 * (player.coinMultiplier || 1);
+            economy.coins += 20 * (player.coinMultiplier || 1);
             economy.save();
         } else if (item.type === 'waterbucket') {
             player.hasWaterBucket = true;
