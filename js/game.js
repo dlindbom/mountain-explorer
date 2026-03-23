@@ -341,7 +341,7 @@ function gameLoop() {
             if (player.hasWaterBucket && player.lavaPlatform) {
                 // Släck lavan — förvandla till sten
                 player.lavaPlatform.lavaExtinguished = true;
-                player.hasWaterBucket = false;
+                player.hasWaterBucket -= 1;
                 player.inLava = false;
             } else {
                 player.takeDamage(30);
@@ -358,7 +358,7 @@ function gameLoop() {
                 if (player.hasBat) {
                     // Slagträ! Slå iväg fienden
                     enemy.active = false;
-                    if (!player.permanentBat) player.hasBat = false;
+                    if (!player.permanentBat) player.hasBat -= 1;
                     bearWarning = 60;
                     enemyWarningText = t('warn_smack');
                 } else if (enemy instanceof Yeti) {
@@ -383,7 +383,7 @@ function gameLoop() {
                 if (player.hasBat) {
                     // Slagträ! Slå iväg örnen
                     eagle.active = false;
-                    if (!player.permanentBat) player.hasBat = false;
+                    if (!player.permanentBat) player.hasBat -= 1;
                     bearWarning = 60;
                     enemyWarningText = t('warn_smack');
                 } else {

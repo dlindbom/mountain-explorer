@@ -141,7 +141,7 @@ class BlizzardManager {
             if (b.isPlayerInside(player)) {
                 if (player.hasWarmJacket) {
                     // Jackan skyddar - förbruka den
-                    player.hasWarmJacket = false;
+                    player.hasWarmJacket -= 1;
                     b.active = false;
                 } else {
                     // 10 skada per sekund

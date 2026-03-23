@@ -139,9 +139,9 @@ class Player {
         this.health = this.maxHealth;
 
         // Powerups
-        this.hasBat = this.permanentBat;
-        this.hasWaterBucket = false;
-        this.hasWarmJacket = false;
+        this.hasBat = this.permanentBat ? 1 : 0;
+        this.hasWaterBucket = 0;
+        this.hasWarmJacket = 0;
         this.blizzardSlow = false; // Sätts av snöstorm
 
         // Klättring
@@ -168,9 +168,9 @@ class Player {
         this.lavaPlatform = null;
         this.lastGroundY = this.startY;
         this.health = this.maxHealth;
-        this.hasBat = this.permanentBat;
-        this.hasWaterBucket = false;
-        this.hasWarmJacket = false;
+        this.hasBat = this.permanentBat ? 1 : 0;
+        this.hasWaterBucket = 0;
+        this.hasWarmJacket = 0;
         this.blizzardSlow = false;
         this.climbing = false;
         this.currentLadder = null;

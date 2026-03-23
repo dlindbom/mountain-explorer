@@ -344,14 +344,14 @@ class PowerupManager {
             this.activeEffect = new ActiveEffect('rocketboots', 150); // 2.5 sek vid 60fps
         } else if (item.type === 'bat') {
             this.activeEffect = new ActiveEffect('bat', 1); // Engångs, hanteras vid kollision
-            player.hasBat = true;
+            player.hasBat += 1;
         } else if (item.type === 'gold') {
             economy.coins += 20 * (player.coinMultiplier || 1);
             economy.save();
         } else if (item.type === 'waterbucket') {
-            player.hasWaterBucket = true;
+            player.hasWaterBucket += 1;
         } else if (item.type === 'warmjacket') {
-            player.hasWarmJacket = true;
+            player.hasWarmJacket += 1;
         } else if (item.type === 'medkit') {
             // Återställ 50 HP
             player.health = Math.min(player.maxHealth, player.health + 100);
@@ -419,9 +419,9 @@ class PowerupManager {
                 ctx.fillText(label, canvas.width - 65, iy + 13);
                 iy += 22;
             };
-            if (player.hasBat) drawIndicator(t('powerup_bat'), 'rgba(180, 140, 80, 0.6)');
-            if (player.hasWaterBucket) drawIndicator(t('powerup_water'), 'rgba(50, 120, 200, 0.6)');
-            if (player.hasWarmJacket) drawIndicator(t('powerup_jacket'), 'rgba(200, 80, 30, 0.6)');
+            if (player.hasBat) drawIndicator(t('powerup_bat') + (player.hasBat > 1 ? ' x' + player.hasBat : ''), 'rgba(180, 140, 80, 0.6)');
+            if (player.hasWaterBucket) drawIndicator(t('powerup_water') + (player.hasWaterBucket > 1 ? ' x' + player.hasWaterBucket : ''), 'rgba(50, 120, 200, 0.6)');
+            if (player.hasWarmJacket) drawIndicator(t('powerup_jacket') + (player.hasWarmJacket > 1 ? ' x' + player.hasWarmJacket : ''), 'rgba(200, 80, 30, 0.6)');
         }
     }
 
