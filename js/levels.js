@@ -116,11 +116,11 @@ function drawLevelSelect(ctx, canvas) {
     ctx.fillStyle = '#FFF';
     ctx.font = 'bold 28px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Välj berg', canvas.width / 2, 40);
+    ctx.fillText(t('choose_mountain'), canvas.width / 2, 40);
 
     ctx.fillStyle = '#FFD700';
     ctx.font = '13px monospace';
-    ctx.fillText(`💰 ${economy.coins} kr`, canvas.width / 2, 60);
+    ctx.fillText(`💰 ${coinLabel(economy.coins)}`, canvas.width / 2, 60);
 
     // Banrutor
     const cols = 4;
@@ -178,7 +178,7 @@ function drawLevelSelect(ctx, canvas) {
         // Land
         ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
         ctx.font = '10px monospace';
-        ctx.fillText(mountain.country, x + 22, y + 30);
+        ctx.fillText(getMountainCountry(mountain.id), x + 22, y + 30);
 
         // Höjd
         ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
@@ -191,7 +191,7 @@ function drawLevelSelect(ctx, canvas) {
             ctx.fillStyle = '#4CAF50';
             ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('KLARAD ✓', x + boxW / 2, y + boxH - 10);
+            ctx.fillText(t('completed'), x + boxW / 2, y + boxH - 10);
         } else if (!unlocked) {
             ctx.fillStyle = 'rgba(255,255,255,0.2)';
             ctx.font = '11px monospace';
@@ -229,9 +229,9 @@ function drawLevelSelect(ctx, canvas) {
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
     if (isTouchDevice) {
-        ctx.fillText('Tryck på ett berg för att spela', canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('touch_mountain'), canvas.width / 2, canvas.height - 15);
     } else {
-        ctx.fillText('Klicka på ett berg eller tryck Escape för att gå tillbaka', canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('click_mountain'), canvas.width / 2, canvas.height - 15);
     }
 }
 
@@ -326,6 +326,6 @@ function drawLevelHUD(ctx, canvas, playerHeight) {
         const pulse = 0.7 + Math.sin(Date.now() * 0.005) * 0.3;
         ctx.fillStyle = `rgba(76, 175, 80, ${pulse})`;
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('TOPP!', panelX, panelY + panelH + 42);
+        ctx.fillText(t('summit'), panelX, panelY + panelH + 42);
     }
 }

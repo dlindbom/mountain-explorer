@@ -403,7 +403,7 @@ class PowerupManager {
             ctx.fillStyle = '#FFF';
             ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('RAKETSTÖVLAR', canvas.width / 2, canvas.height - 23);
+            ctx.fillText(t('powerup_rocket'), canvas.width / 2, canvas.height - 23);
         }
 
         // Itemindiatorer (höger sida, under pengar)
@@ -419,9 +419,9 @@ class PowerupManager {
                 ctx.fillText(label, canvas.width - 65, iy + 13);
                 iy += 22;
             };
-            if (player.hasBat) drawIndicator('🏏 SLAGTRÄ', 'rgba(180, 140, 80, 0.6)');
-            if (player.hasWaterBucket) drawIndicator('🪣 VATTEN', 'rgba(50, 120, 200, 0.6)');
-            if (player.hasWarmJacket) drawIndicator('🧥 JACKA', 'rgba(200, 80, 30, 0.6)');
+            if (player.hasBat) drawIndicator(t('powerup_bat'), 'rgba(180, 140, 80, 0.6)');
+            if (player.hasWaterBucket) drawIndicator(t('powerup_water'), 'rgba(50, 120, 200, 0.6)');
+            if (player.hasWarmJacket) drawIndicator(t('powerup_jacket'), 'rgba(200, 80, 30, 0.6)');
         }
     }
 

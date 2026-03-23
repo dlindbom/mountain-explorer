@@ -62,7 +62,7 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
     if (player.maxHeight > height) {
         ctx.font = '11px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText(`Bäst: ${player.maxHeight} m`, canvas.width / 2, 50);
+        ctx.fillText(t('best', { height: player.maxHeight }), canvas.width / 2, 50);
     }
 
     // Karaktärsnamn (liten text)
@@ -82,7 +82,7 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`${economy.coins} kr`, canvas.width - 20, 28);
+    ctx.fillText(coinLabel(economy.coins), canvas.width - 20, 28);
     ctx.textAlign = 'center';
 
     // Starthjälp
@@ -93,11 +93,11 @@ function drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText) {
         ctx.font = '13px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         if (isTouchDevice) {
-            ctx.fillText('← → Röra sig   ↑ Hoppa & Klättra', canvas.width / 2, canvas.height - 98);
+            ctx.fillText(t('help_touch'), canvas.width / 2, canvas.height - 98);
         } else {
-            ctx.fillText('← → Röra sig   ↑ Hoppa/Klättra   Mellanslag = Hoppa', canvas.width / 2, canvas.height - 98);
+            ctx.fillText(t('help_desktop'), canvas.width / 2, canvas.height - 98);
         }
-        ctx.fillText('Hoppa på klippavsatserna och klättra stegarna!', canvas.width / 2, canvas.height - 78);
+        ctx.fillText(t('help_instruction'), canvas.width / 2, canvas.height - 78);
     }
 
     // Björnvarning

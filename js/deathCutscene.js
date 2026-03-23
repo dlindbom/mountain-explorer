@@ -12,6 +12,16 @@ class DeathCutscene {
         this.maxHeight = deathInfo.maxHeight || 0;
         this.gotNewRecord = deathInfo.gotNewRecord || false;
         this.recordEarned = deathInfo.recordEarned || 0;
+        // Förberäkna översättningar (t skuggas av parameter i draw-metoder)
+        this.texts = {
+            eagle: t('cutscene_eagle'),
+            bear: t('cutscene_bear'),
+            yeti: t('cutscene_yeti'),
+            rock_crash: t('cutscene_rock_crash'),
+            rock: t('cutscene_rock'),
+            lava: t('cutscene_lava'),
+            fall: t('cutscene_fall'),
+        };
     }
 
     getAnimDuration() {
@@ -66,29 +76,29 @@ class DeathCutscene {
         // Höjd
         ctx.font = '18px monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillText(`Höjd: ${this.maxHeight} m`, cx, cy - 15);
+        ctx.fillText(t('height_reached', { height: this.maxHeight }), cx, cy - 15);
 
         // Nytt rekord
         if (this.gotNewRecord) {
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 16px monospace';
-            ctx.fillText(`NYTT REKORD! +${this.recordEarned} kr`, cx, cy + 15);
+            ctx.fillText(t('new_record', { earned: this.recordEarned }), cx, cy + 15);
         }
 
         // Pengar
         ctx.fillStyle = '#FFD700';
         ctx.font = '14px monospace';
-        ctx.fillText(`💰 ${economy.coins} kr`, cx, cy + 42);
+        ctx.fillText(`💰 ${coinLabel(economy.coins)}`, cx, cy + 42);
 
         // Restart-instruktioner
         if (this.canRestart) {
             ctx.font = '13px monospace';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
             if (isTouchDevice) {
-                ctx.fillText('Tryck för att försöka igen', cx, cy + 75);
+                ctx.fillText(t('touch_retry'), cx, cy + 75);
             } else {
-                ctx.fillText('Mellanslag = försök igen', cx, cy + 75);
-                ctx.fillText('Escape = byt karaktär', cx, cy + 93);
+                ctx.fillText(t('key_retry'), cx, cy + 75);
+                ctx.fillText(t('key_change'), cx, cy + 93);
             }
         }
 
@@ -198,7 +208,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.5) ctx.fillText('Örnen tog dig till sitt bo...', cx, cy + 140);
+        if (t > 0.5) ctx.fillText(this.texts.eagle, cx, cy + 140);
     }
 
     // === BJÖRNEN: äter upp spelaren ===
@@ -231,7 +241,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.5) ctx.fillText('Björnen åt upp dig!', cx, cy + 130);
+        if (t > 0.5) ctx.fillText(this.texts.bear, cx, cy + 130);
     }
 
     // === YETIN: slår iväg spelaren som en projektil ===
@@ -278,7 +288,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.4) ctx.fillText('Yetin slog iväg dig!', cx, cy + 130);
+        if (t > 0.4) ctx.fillText(this.texts.yeti, cx, cy + 130);
     }
 
     // === STENRAS: krossad av sten ===
@@ -305,7 +315,7 @@ class DeathCutscene {
             ctx.fillStyle = '#FFF';
             ctx.font = 'bold 30px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('KRASCH!', cx + (Math.random() - 0.5) * 10, cy - 60);
+            ctx.fillText(this.texts.rock_crash, cx + (Math.random() - 0.5) * 10, cy - 60);
         } else {
             // Stenen ligger kvar, spelaren borta
             this.drawBigRock(ctx, cx, groundY, 45);
@@ -320,7 +330,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.5) ctx.fillText('Krossad av en sten!', cx, cy + 130);
+        if (t > 0.5) ctx.fillText(this.texts.rock, cx, cy + 130);
     }
 
     // === LAVA: brinner upp ===
@@ -377,7 +387,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.4) ctx.fillText('Du brann upp i lavan!', cx, cy + 130);
+        if (t > 0.4) ctx.fillText(this.texts.lava, cx, cy + 130);
     }
 
     // === FALL: faller ner ===
@@ -401,7 +411,7 @@ class DeathCutscene {
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
-        if (t > 0.4) ctx.fillText('Du föll!', cx, cy + 130);
+        if (t > 0.4) ctx.fillText(this.texts.fall, cx, cy + 130);
     }
 
     // === Hjälp-ritfunktioner ===

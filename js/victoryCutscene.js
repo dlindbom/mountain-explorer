@@ -111,22 +111,22 @@ class VictoryCutscene {
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 34px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('GRATTIS!', cx, 80);
+            ctx.fillText(t('congrats'), cx, 80);
 
             ctx.fillStyle = '#FFF';
             ctx.font = 'bold 20px monospace';
-            ctx.fillText(`Du har bestigit`, cx, 120);
+            ctx.fillText(t('you_climbed'), cx, 120);
             ctx.fillStyle = '#5BA3D9';
             ctx.font = 'bold 24px monospace';
             ctx.fillText(this.mountain.name, cx, 150);
 
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = '16px monospace';
-            ctx.fillText(`${this.mountain.height} m · ${this.mountain.country}`, cx, 178);
+            ctx.fillText(`${this.mountain.height} m · ${getMountainCountry(this.mountain.id)}`, cx, 178);
 
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 16px monospace';
-            ctx.fillText('+100 kr', cx, 210);
+            ctx.fillText(t('reward'), cx, 210);
 
             ctx.globalAlpha = 1;
         }
@@ -149,9 +149,9 @@ class VictoryCutscene {
                 ctx.font = '14px monospace';
                 ctx.textAlign = 'center';
                 if (isTouchDevice) {
-                    ctx.fillText('Tryck för att fortsätta', cx, canvas.height - 30);
+                    ctx.fillText(t('touch_continue'), cx, canvas.height - 30);
                 } else {
-                    ctx.fillText('Tryck mellanslag för att fortsätta', cx, canvas.height - 30);
+                    ctx.fillText(t('key_continue'), cx, canvas.height - 30);
                 }
             }
         }

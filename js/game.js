@@ -28,17 +28,19 @@ let rockfall = new RockfallManager();
 let powerups = new PowerupManager();
 let blizzardMgr = new BlizzardManager();
 let cameraY = 0;
-let gameState = 'charselect'; // charselect → levelselect → playing → cutscene
+let gameState = 'charselect'; // charselect → levelselect → introCutscene → playing → cutscene
 let levelCompleted = false;
 let deathCause = '';
+let deathType = '';
 let nextBearHeight = 100;
 let nextYetiHeight = 200;
 let bearWarning = 0;
-let enemyWarningText = 'BJÖRN!';
+let enemyWarningText = '';
 let selectedCharacter = null;
 let savedMaxHeight = 0;
 let deathCutscene = null;
 let victoryCutscene = null;
+let introCutscene = null;
 
 // Örn-system
 let eagles = [];
@@ -85,6 +87,8 @@ canvas.addEventListener('touchend', (e) => {
         handleMenuClick(cx, cy);
     } else if (gameState === 'victoryCutscene' && victoryCutscene && victoryCutscene.canContinue) {
         gameState = 'levelselect';
+    } else if (gameState === 'introCutscene' && introCutscene && introCutscene.canSkip) {
+        gameState = 'playing';
     }
 });
 
@@ -118,7 +122,11 @@ function startGame(characterId) {
     lastPlayerY = 0;
     cameraY = 0;
     levelCompleted = false;
-    gameState = 'playing';
+
+    // Visa intro-cutscene innan spelet börjar
+    const mountain = levelProgress.getCurrentMountain();
+    introCutscene = new IntroCutscene(mountain, player.colors);
+    gameState = 'introCutscene';
 }
 
 function restartGame() {
@@ -127,7 +135,25 @@ function restartGame() {
         return;
     }
     savedMaxHeight = player ? player.maxHeight : 0;
-    startGame(selectedCharacter);
+    // Hoppa över intro vid restart — gå direkt till spelet
+    selectedCharacter = selectedCharacter;
+    level = new Level();
+    player = new Player(380, level.groundY - 32, selectedCharacter);
+    player.maxHeight = savedMaxHeight;
+    bears = [];
+    eagles = [];
+    rockfall.reset();
+    powerups.reset();
+    blizzardMgr.reset();
+    nextBearHeight = 100;
+    nextYetiHeight = 200;
+    bearWarning = 0;
+    playerIdleFrames = 0;
+    lastPlayerX = 0;
+    lastPlayerY = 0;
+    cameraY = 0;
+    levelCompleted = false;
+    gameState = 'playing';
 }
 
 function goToCharacterSelect() {
@@ -177,11 +203,11 @@ function spawnEnemy(type) {
     if (type === 'yeti') {
         enemy = new Yeti(enemyX, spawnPlatform.y);
         bearWarning = 150;
-        enemyWarningText = 'YETI!';
+        enemyWarningText = t('warn_yeti');
     } else {
         enemy = new Bear(enemyX, spawnPlatform.y);
         bearWarning = 120;
-        enemyWarningText = 'BJÖRN!';
+        enemyWarningText = t('warn_bear');
     }
     enemy.platformX = spawnPlatform.x;
     enemy.platformWidth = spawnPlatform.width;
@@ -208,7 +234,7 @@ function updateEagles() {
     if (playerIdleFrames === IDLE_THRESHOLD) {
         eagles.push(new Eagle(px + player.width / 2, py + player.height / 2));
         bearWarning = 80;
-        enemyWarningText = 'ÖRN!';
+        enemyWarningText = t('warn_eagle');
     }
 
     // Spawna ny örn var 90:e frame om fortfarande stilla
@@ -271,6 +297,22 @@ function gameLoop() {
         return;
     }
 
+    // === INTRO-CUTSCENE ===
+    if (gameState === 'introCutscene') {
+        if (introCutscene) {
+            introCutscene.update();
+            introCutscene.draw(ctx, canvas);
+            if (introCutscene.done) {
+                gameState = 'playing';
+            }
+            if (introCutscene.canSkip && (keys[' '] || keys['Escape'])) {
+                gameState = 'playing';
+            }
+        }
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
     // === UPPDATERA ===
     if (gameState === 'playing') {
         player.update(keys, level.platforms, level.ladders);
@@ -296,7 +338,10 @@ function gameLoop() {
                 player.hasWaterBucket = false; // Förbruka hinken
             } else {
                 player.takeDamage(40);
-                if (player.isDead()) deathCause = 'Lava!';
+                if (player.isDead()) {
+                    deathType = 'lava';
+                    deathCause = t('death_lava');
+                }
             }
         }
 
@@ -308,13 +353,19 @@ function gameLoop() {
                     enemy.active = false;
                     if (!player.permanentBat) player.hasBat = false;
                     bearWarning = 60;
-                    enemyWarningText = 'SMACK!';
+                    enemyWarningText = t('warn_smack');
                 } else if (enemy instanceof Yeti) {
                     player.takeDamage(player.maxHealth * 0.75);
-                    if (player.isDead()) deathCause = 'Yetin krossade dig!';
+                    if (player.isDead()) {
+                        deathType = 'yeti';
+                        deathCause = t('death_yeti');
+                    }
                 } else {
                     player.takeDamage(50 / 60);
-                    if (player.isDead()) deathCause = 'Björnen tog dig!';
+                    if (player.isDead()) {
+                        deathType = 'bear';
+                        deathCause = t('death_bear');
+                    }
                 }
             }
         }
@@ -327,11 +378,14 @@ function gameLoop() {
                     eagle.active = false;
                     if (!player.permanentBat) player.hasBat = false;
                     bearWarning = 60;
-                    enemyWarningText = 'SMACK!';
+                    enemyWarningText = t('warn_smack');
                 } else {
                     player.takeDamage(40);
                     eagle.active = false;
-                    if (player.isDead()) deathCause = 'Örnen tog dig!';
+                    if (player.isDead()) {
+                        deathType = 'eagle';
+                        deathCause = t('death_eagle');
+                    }
                 }
             }
         }
@@ -339,13 +393,17 @@ function gameLoop() {
         // Stenras = 25 skada per träff
         if (rockfall.checkCollision(player)) {
             player.takeDamage(25);
-            if (player.isDead()) deathCause = 'Stenras!';
+            if (player.isDead()) {
+                deathType = 'rock';
+                deathCause = t('death_rock');
+            }
         }
 
         // Föll för långt = instant death
         if (player.y > player.lastGroundY + 500 || player.y > level.groundY + 100) {
             player.takeDamage(player.maxHealth);
-            deathCause = 'Du föll!';
+            deathType = 'fall';
+            deathCause = t('death_fall');
         }
 
         // Kolla om spelaren dog
@@ -353,15 +411,7 @@ function gameLoop() {
             gameState = 'cutscene';
             const earned = economy.processRun(player.maxHeight, player.coinMultiplier);
 
-            // Bestäm cutscene-typ
-            let cutsceneType = 'fall';
-            if (deathCause.includes('Örn')) cutsceneType = 'eagle';
-            else if (deathCause.includes('Björn')) cutsceneType = 'bear';
-            else if (deathCause.includes('Yeti')) cutsceneType = 'yeti';
-            else if (deathCause.includes('Stenras')) cutsceneType = 'rock';
-            else if (deathCause.includes('Lava')) cutsceneType = 'lava';
-
-            deathCutscene = new DeathCutscene(cutsceneType, player.colors, {
+            deathCutscene = new DeathCutscene(deathType, player.colors, {
                 deathCause: deathCause,
                 maxHeight: player.maxHeight,
                 gotNewRecord: earned > 0,
@@ -421,7 +471,6 @@ function gameLoop() {
         drawLevelHUD(ctx, canvas, player.getHeight());
         drawUI(ctx, canvas, player, bearWarning, gameState, enemyWarningText);
     }
-    // (dödsinfo visas nu inuti cutscenen)
 
     requestAnimationFrame(gameLoop);
 }

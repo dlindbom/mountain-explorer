@@ -21,6 +21,14 @@ const ARROW_Y = CARD_Y + CARD_H / 2 - ARROW_SIZE / 2;
 const ARROW_LEFT_X = CARDS_START_X - ARROW_SIZE - 14;
 const ARROW_RIGHT_X = CARDS_START_X + CARDS_TOTAL_W + 14;
 
+// Språkflaggor (uppe till höger)
+const FLAG_W = 36;
+const FLAG_H = 24;
+const FLAG_GAP = 8;
+const FLAG_Y = 10;
+const FLAG_SV_X = 800 - FLAG_W * 2 - FLAG_GAP - 15;
+const FLAG_EN_X = 800 - FLAG_W - 15;
+
 function drawCharacterSelect(ctx, canvas) {
     // Bakgrund
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -43,11 +51,11 @@ function drawCharacterSelect(ctx, canvas) {
     ctx.fillStyle = '#FFF';
     ctx.font = 'bold 32px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Mountain Explorer', canvas.width / 2, 45);
+    ctx.fillText(t('menu_title'), canvas.width / 2, 45);
 
     ctx.font = '15px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText('Välj din karaktär', canvas.width / 2, 70);
+    ctx.fillText(t('choose_character'), canvas.width / 2, 70);
 
     // Pengar och rekord
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -55,9 +63,12 @@ function drawCharacterSelect(ctx, canvas) {
     ctx.fill();
     ctx.font = 'bold 13px monospace';
     ctx.fillStyle = '#FFD700';
-    ctx.fillText(`💰 ${economy.coins} kr`, canvas.width / 2 - 50, 98);
+    ctx.fillText(`💰 ${coinLabel(economy.coins)}`, canvas.width / 2 - 50, 98);
     ctx.fillStyle = '#AAA';
-    ctx.fillText(`🏔 Rekord: ${economy.bestHeight} m`, canvas.width / 2 + 70, 98);
+    ctx.fillText(`🏔 ${t('record')}: ${economy.bestHeight} m`, canvas.width / 2 + 70, 98);
+
+    // Språkflaggor
+    drawLanguageFlags(ctx);
 
     // Rita 3 synliga kort
     const count = ALL_CHARACTER_IDS.length;
@@ -99,10 +110,58 @@ function drawCharacterSelect(ctx, canvas) {
     ctx.font = '12px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     if (isTouchDevice) {
-        ctx.fillText('Tryck på en karaktär för att börja', canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('touch_choose'), canvas.width / 2, canvas.height - 15);
     } else {
-        ctx.fillText('Klicka på en karaktär eller använd pilarna', canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('click_choose'), canvas.width / 2, canvas.height - 15);
     }
+}
+
+function drawLanguageFlags(ctx) {
+    const svActive = currentLang === 'sv';
+    const enActive = currentLang === 'en';
+
+    // Svensk flagga
+    drawSwedishFlag(ctx, FLAG_SV_X, FLAG_Y, FLAG_W, FLAG_H, svActive);
+    // Engelsk flagga
+    drawEnglishFlag(ctx, FLAG_EN_X, FLAG_Y, FLAG_W, FLAG_H, enActive);
+}
+
+function drawSwedishFlag(ctx, x, y, w, h, active) {
+    // Bakgrund blå
+    ctx.fillStyle = active ? '#006AA7' : 'rgba(0, 106, 167, 0.4)';
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.fill();
+    // Gult kors
+    ctx.fillStyle = active ? '#FECC02' : 'rgba(254, 204, 2, 0.4)';
+    ctx.fillRect(x + w * 0.3, y, w * 0.12, h); // Vertikal
+    ctx.fillRect(x, y + h * 0.4, w, h * 0.2);  // Horisontell
+    // Ram
+    ctx.strokeStyle = active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = active ? 2 : 1;
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.stroke();
+}
+
+function drawEnglishFlag(ctx, x, y, w, h, active) {
+    // Bakgrund vit
+    ctx.fillStyle = active ? '#FFF' : 'rgba(255, 255, 255, 0.4)';
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.fill();
+    // Rött kors (St George's cross)
+    ctx.fillStyle = active ? '#CF142B' : 'rgba(207, 20, 43, 0.4)';
+    ctx.fillRect(x + w * 0.44, y, w * 0.12, h); // Vertikal
+    ctx.fillRect(x, y + h * 0.38, w, h * 0.24); // Horisontell
+    // Blå hörn (Union Jack-liknande)
+    ctx.fillStyle = active ? '#00247D' : 'rgba(0, 36, 125, 0.4)';
+    ctx.fillRect(x + 2, y + 2, w * 0.38, h * 0.34);
+    ctx.fillRect(x + w * 0.6, y + 2, w * 0.38 - 2, h * 0.34);
+    ctx.fillRect(x + 2, y + h * 0.66, w * 0.38, h * 0.34 - 2);
+    ctx.fillRect(x + w * 0.6, y + h * 0.66, w * 0.38 - 2, h * 0.34 - 2);
+    // Ram
+    ctx.strokeStyle = active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = active ? 2 : 1;
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.stroke();
 }
 
 function drawArrowButton(ctx, x, y, size, direction) {
@@ -154,11 +213,11 @@ function drawCharacterCard(ctx, x, y, w, h, char, id, unlocked) {
         ctx.fillText('🔒', x + w / 2, y + 140);
     }
 
-    // Beskrivning
+    // Beskrivning (översatt)
     const descY = y + 210;
     ctx.fillStyle = unlocked ? char.jacket : 'rgba(255,255,255,0.3)';
     ctx.font = 'bold 13px monospace';
-    ctx.fillText(char.desc, x + w / 2, descY);
+    ctx.fillText(t('char_' + id + '_desc'), x + w / 2, descY);
 
     // Stats
     ctx.font = '12px monospace';
@@ -181,7 +240,8 @@ function drawCharacterCard(ctx, x, y, w, h, char, id, unlocked) {
     ctx.fillText(`♥ ${bar(hpPct)} ${hpPct}%`, x + w / 2, descY + 56);
     if (coinMult > 1) {
         ctx.fillStyle = unlocked ? '#FFD700' : 'rgba(255,215,0,0.3)';
-        ctx.fillText(`💰 x${coinMult} PENGAR`, x + w / 2, descY + 72);
+        const coinLabel = currentLang === 'en' ? `💰 x${coinMult} COINS` : `💰 x${coinMult} PENGAR`;
+        ctx.fillText(coinLabel, x + w / 2, descY + 72);
         ctx.fillStyle = unlocked ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)';
     }
 
@@ -204,7 +264,7 @@ function drawCharacterCard(ctx, x, y, w, h, char, id, unlocked) {
 
         ctx.fillStyle = canBuy ? '#FFD700' : 'rgba(255,255,255,0.3)';
         ctx.font = 'bold 14px monospace';
-        ctx.fillText(`KÖP ${char.cost} kr`, x + w / 2, btnY + 21);
+        ctx.fillText(t('buy', { cost: char.cost }), x + w / 2, btnY + 21);
     }
 }
 
@@ -257,12 +317,24 @@ function drawCharacterPreview(ctx, x, y, char, s, id) {
 function getSelectedCharacter(canvasX, canvasY) {
     const count = ALL_CHARACTER_IDS.length;
 
+    // Kolla språkflaggor
+    if (canvasY >= FLAG_Y && canvasY <= FLAG_Y + FLAG_H) {
+        if (canvasX >= FLAG_SV_X && canvasX <= FLAG_SV_X + FLAG_W) {
+            setLanguage('sv');
+            return null;
+        }
+        if (canvasX >= FLAG_EN_X && canvasX <= FLAG_EN_X + FLAG_W) {
+            setLanguage('en');
+            return null;
+        }
+    }
+
     // Kolla vänsterpil
     if (charSelectStartIndex > 0 &&
         canvasX >= ARROW_LEFT_X && canvasX <= ARROW_LEFT_X + ARROW_SIZE &&
         canvasY >= ARROW_Y && canvasY <= ARROW_Y + ARROW_SIZE) {
         charSelectStartIndex--;
-        return null; // Navigerade, inget val
+        return null;
     }
 
     // Kolla högerpil
@@ -270,7 +342,7 @@ function getSelectedCharacter(canvasX, canvasY) {
         canvasX >= ARROW_RIGHT_X && canvasX <= ARROW_RIGHT_X + ARROW_SIZE &&
         canvasY >= ARROW_Y && canvasY <= ARROW_Y + ARROW_SIZE) {
         charSelectStartIndex++;
-        return null; // Navigerade, inget val
+        return null;
     }
 
     // Kolla kort
@@ -284,15 +356,14 @@ function getSelectedCharacter(canvasX, canvasY) {
             const id = ALL_CHARACTER_IDS[charIndex];
 
             if (economy.isUnlocked(id)) {
-                return id; // Välj karaktären
+                return id;
             }
 
-            // Försök köpa
             if (economy.buyCharacter(id)) {
-                return id; // Köpt och vald!
+                return id;
             }
 
-            return null; // Inte råd
+            return null;
         }
     }
     return null;
