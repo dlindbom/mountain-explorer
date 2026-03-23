@@ -7,6 +7,7 @@ const economy = {
     coins: 0,
     bestHeight: 0,
     unlockedCharacters: ['alfred', 'astrid', 'pappa', 'mamma', 'alice'], // Gratis från start
+    purchasedUpgrades: [], // Köpta uppgraderingar från affären
 
     // Karaktärer som alltid är gratis
     FREE_CHARACTERS: ['alfred', 'astrid', 'pappa', 'mamma', 'alice'],
@@ -18,6 +19,7 @@ const economy = {
                 this.coins = data.coins || 0;
                 this.bestHeight = data.bestHeight || 0;
                 this.unlockedCharacters = data.unlockedCharacters || [];
+                this.purchasedUpgrades = data.purchasedUpgrades || [];
             }
         } catch (e) {}
         // Se till att gratis-karaktärer alltid finns
@@ -33,7 +35,8 @@ const economy = {
             localStorage.setItem(SAVE_KEY, JSON.stringify({
                 coins: this.coins,
                 bestHeight: this.bestHeight,
-                unlockedCharacters: this.unlockedCharacters
+                unlockedCharacters: this.unlockedCharacters,
+                purchasedUpgrades: this.purchasedUpgrades
             }));
         } catch (e) {
             // Tyst fail om localStorage inte funkar
@@ -59,6 +62,20 @@ const economy = {
 
     isUnlocked(characterId) {
         return this.unlockedCharacters.includes(characterId);
+    },
+
+    // Affärs-uppgraderingar
+    hasUpgrade(upgradeId) {
+        return this.purchasedUpgrades.includes(upgradeId);
+    },
+
+    buyUpgrade(upgradeId, cost) {
+        if (this.hasUpgrade(upgradeId)) return false;
+        if (this.coins < cost) return false;
+        this.coins -= cost;
+        this.purchasedUpgrades.push(upgradeId);
+        this.save();
+        return true;
     },
 
     buyCharacter(characterId) {

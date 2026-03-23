@@ -29,6 +29,12 @@ const FLAG_Y = 10;
 const FLAG_SV_X = 800 - FLAG_W * 2 - FLAG_GAP - 15;
 const FLAG_EN_X = 800 - FLAG_W - 15;
 
+// Affärsknapp
+const SHOP_BTN_W = 110;
+const SHOP_BTN_H = 32;
+const SHOP_BTN_X = (800 - SHOP_BTN_W) / 2;
+const SHOP_BTN_Y = 530;
+
 function drawCharacterSelect(ctx, canvas) {
     // Bakgrund
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -106,13 +112,26 @@ function drawCharacterSelect(ctx, canvas) {
         ctx.fill();
     }
 
+    // Affärsknapp
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.1)';
+    roundRect(ctx, SHOP_BTN_X, SHOP_BTN_Y, SHOP_BTN_W, SHOP_BTN_H, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, SHOP_BTN_X, SHOP_BTN_Y, SHOP_BTN_W, SHOP_BTN_H, 8);
+    ctx.stroke();
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(t('shop_btn'), canvas.width / 2, SHOP_BTN_Y + 22);
+
     // Instruktioner
     ctx.font = '12px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     if (isTouchDevice) {
-        ctx.fillText(t('touch_choose'), canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('touch_choose'), canvas.width / 2, canvas.height - 8);
     } else {
-        ctx.fillText(t('click_choose'), canvas.width / 2, canvas.height - 15);
+        ctx.fillText(t('click_choose'), canvas.width / 2, canvas.height - 8);
     }
 }
 
@@ -316,6 +335,12 @@ function drawCharacterPreview(ctx, x, y, char, s, id) {
 // Hantera klick/touch på karaktärsval-skärmen
 function getSelectedCharacter(canvasX, canvasY) {
     const count = ALL_CHARACTER_IDS.length;
+
+    // Kolla affärsknapp
+    if (canvasX >= SHOP_BTN_X && canvasX <= SHOP_BTN_X + SHOP_BTN_W &&
+        canvasY >= SHOP_BTN_Y && canvasY <= SHOP_BTN_Y + SHOP_BTN_H) {
+        return 'shop';
+    }
 
     // Kolla språkflaggor
     if (canvasY >= FLAG_Y && canvasY <= FLAG_Y + FLAG_H) {

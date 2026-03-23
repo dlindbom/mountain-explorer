@@ -139,8 +139,11 @@ class BlizzardManager {
             b.update(player.x, player.y);
 
             if (b.isPlayerInside(player)) {
-                if (player.hasWarmJacket) {
-                    // Jackan skyddar - förbruka den
+                if (player.permanentWarmJacket) {
+                    // Permanent jacka — avbryt storm, ingen kostnad
+                    b.active = false;
+                } else if (player.hasWarmJacket) {
+                    // Tillfällig jacka — förbruka den
                     player.hasWarmJacket -= 1;
                     b.active = false;
                 } else {

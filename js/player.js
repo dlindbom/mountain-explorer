@@ -120,6 +120,7 @@ class Player {
         this.scale = char.scale || 1;
         this.coinMultiplier = char.coinMultiplier || 1;
         this.permanentBat = char.permanentBat || false;
+        this.permanentWarmJacket = economy.hasUpgrade('permanentWarmJacket');
         this.jumpSpeedBoost = char.jumpSpeedBoost || 1;
 
         this.width = Math.round(24 * this.scale);
@@ -141,7 +142,7 @@ class Player {
         // Powerups
         this.hasBat = this.permanentBat ? 1 : 0;
         this.hasWaterBucket = 0;
-        this.hasWarmJacket = 0;
+        this.hasWarmJacket = this.permanentWarmJacket ? 1 : 0;
         this.blizzardSlow = false; // Sätts av snöstorm
 
         // Klättring
@@ -170,7 +171,7 @@ class Player {
         this.health = this.maxHealth;
         this.hasBat = this.permanentBat ? 1 : 0;
         this.hasWaterBucket = 0;
-        this.hasWarmJacket = 0;
+        this.hasWarmJacket = this.permanentWarmJacket ? 1 : 0;
         this.blizzardSlow = false;
         this.climbing = false;
         this.currentLadder = null;
@@ -382,6 +383,20 @@ class Player {
         }
 
         ctx.restore();
+
+        // Permanent vinterjacka: varm glöd runt karaktären
+        if (this.permanentWarmJacket) {
+            const glowX = this.x + this.width / 2;
+            const glowY = this.y + this.height / 2 - cameraY;
+            ctx.fillStyle = 'rgba(200, 60, 30, 0.12)';
+            ctx.beginPath();
+            ctx.ellipse(glowX, glowY, this.width * 1.2, this.height * 0.9, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 100, 50, 0.06)';
+            ctx.beginPath();
+            ctx.ellipse(glowX, glowY, this.width * 1.8, this.height * 1.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     drawClimbing(ctx) {

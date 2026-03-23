@@ -56,7 +56,9 @@ setupInput(canvas, () => gameState, () => deathCutscene && deathCutscene.canRest
 function handleMenuClick(canvasX, canvasY) {
     if (gameState === 'charselect') {
         const chosen = getSelectedCharacter(canvasX, canvasY);
-        if (chosen) {
+        if (chosen === 'shop') {
+            gameState = 'shop';
+        } else if (chosen) {
             selectedCharacter = chosen;
             gameState = 'levelselect';
         }
@@ -66,11 +68,16 @@ function handleMenuClick(canvasX, canvasY) {
             levelProgress.selectLevel(lvl);
             startGame(selectedCharacter);
         }
+    } else if (gameState === 'shop') {
+        const result = getShopClick(canvasX, canvasY);
+        if (result === 'back') {
+            gameState = 'charselect';
+        }
     }
 }
 
 canvas.addEventListener('click', (e) => {
-    if (gameState !== 'charselect' && gameState !== 'levelselect') return;
+    if (gameState !== 'charselect' && gameState !== 'levelselect' && gameState !== 'shop') return;
     const rect = canvas.getBoundingClientRect();
     const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -78,7 +85,7 @@ canvas.addEventListener('click', (e) => {
 });
 
 canvas.addEventListener('touchend', (e) => {
-    if (gameState === 'charselect' || gameState === 'levelselect') {
+    if (gameState === 'charselect' || gameState === 'levelselect' || gameState === 'shop') {
         const touch = e.changedTouches[0];
         if (!touch) return;
         const rect = canvas.getBoundingClientRect();
@@ -102,6 +109,8 @@ window.addEventListener('keydown', (e) => {
             gameState = 'levelselect';
         }
     } else if (gameState === 'levelselect') {
+        if (e.key === 'Escape') gameState = 'charselect';
+    } else if (gameState === 'shop') {
         if (e.key === 'Escape') gameState = 'charselect';
     }
 });
@@ -297,6 +306,11 @@ function gameLoop() {
     }
     if (gameState === 'levelselect') {
         drawLevelSelect(ctx, canvas);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (gameState === 'shop') {
+        drawShop(ctx, canvas);
         requestAnimationFrame(gameLoop);
         return;
     }

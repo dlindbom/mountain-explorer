@@ -102,6 +102,15 @@ const TRANSLATIONS = {
         'powerup_water': '🪣 VATTEN',
         'powerup_jacket': '🧥 JACKA',
 
+        // === Affär ===
+        'shop_title': 'AFFÄR',
+        'shop_btn': 'AFFÄR',
+        'shop_back': 'TILLBAKA',
+        'shop_bought': 'KÖPT!',
+        'shop_buy': 'KÖP {cost} kr',
+        'shop_jacket_name': 'Vinterjacka',
+        'shop_jacket_desc': 'Permanent skydd mot snöstormar',
+
         // === Intro-cutscene ===
         'intro_time_to_climb': 'Dags att bestiga',
         'intro_height': '{height} meter till toppen!',
@@ -203,6 +212,15 @@ const TRANSLATIONS = {
         'powerup_bat': '🏏 BAT',
         'powerup_water': '🪣 WATER',
         'powerup_jacket': '🧥 JACKET',
+
+        // === Shop ===
+        'shop_title': 'SHOP',
+        'shop_btn': 'SHOP',
+        'shop_back': 'BACK',
+        'shop_bought': 'BOUGHT!',
+        'shop_buy': 'BUY {cost} coins',
+        'shop_jacket_name': 'Winter Jacket',
+        'shop_jacket_desc': 'Permanent blizzard immunity',
 
         // === Intro cutscene ===
         'intro_time_to_climb': 'Time to climb',
