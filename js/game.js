@@ -310,8 +310,8 @@ function gameLoop() {
                     bearWarning = 60;
                     enemyWarningText = 'SMACK!';
                 } else if (enemy instanceof Yeti) {
-                    player.takeDamage(player.maxHealth);
-                    deathCause = 'Yetin krossade dig!';
+                    player.takeDamage(player.maxHealth * 0.75);
+                    if (player.isDead()) deathCause = 'Yetin krossade dig!';
                 } else {
                     player.takeDamage(50 / 60);
                     if (player.isDead()) deathCause = 'Björnen tog dig!';
